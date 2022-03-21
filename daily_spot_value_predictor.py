@@ -29,7 +29,7 @@ X = np.column_stack((dayOfYear, precip))
 y = prices_16.iloc[:,1]
 
 # set up model and fit data to model
-regr = sk.svm.SVR()
+regr = sk.svm.SVR(kernel='rbf')
 regr.fit(X, y)
 
 
