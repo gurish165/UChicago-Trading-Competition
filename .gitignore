@@ -1,0 +1,76 @@
+# This is a sample .gitignore file that's useful for EECS 485 projects.
+#
+# Add this file to the root of your git repo.  Name it .gitignore
+#
+# A .gitignore file will tell git which files and directories to ignore and
+# not add to version control.
+
+# EECS 485 All Projects
+submit.tar.gz
+submit.tar.xz
+starter_files.tar.gz
+starter_files.tar.xz
+
+# EECS 485 Project 1
+/insta485/html/
+/hello/html/
+/hello_css/html/
+
+# EECS 485 Project 2
+*.pem
+*.db
+var/
+
+# EECS 485 Project 3
+node_modules/
+cookies.txt
+bundle.js
+
+# EECS 485 Project 4
+tmp
+output
+
+# EECS 485 Project 5
+output*
+total_document_count.txt
+*/hadoop/inverted_index/inverted_index.txt
+
+# Python
+*.pyc
+__pycache__/
+*.egg-info*
+dist/
+env/
+venv/
+venv3/
+.venv/
+.pytest_cache
+
+# JavaScript
+bundle.js
+*node_modules*
+files_for_autograder_io/
+*/var/*
+
+# Virtual Machines
+.vagrant/
+
+# Text editors and IDEs
+*~
+*.lock
+*.swp
+.vscode
+.ropeproject/
+.vscode/
+
+# macOS system files
+*.DS_Store
+
+# Google Drive and Dropbox
+Icon
+.dropbox*
+
+# xchange
+xchange
+xchange-linux
+xchange-win.exe
