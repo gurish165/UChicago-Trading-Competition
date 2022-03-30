@@ -5,11 +5,11 @@ from datetime import datetime
 from utc_bot import UTCBot, start_bot
 import proto.utc_bot as pb
 import betterproto
-
+from math import floor
 import asyncio
 
-
 option_strikes = [90, 95, 100, 105, 110]
+update_num = 1
 
 
 class Case2ExampleBot(UTCBot):
@@ -96,9 +96,14 @@ class Case2ExampleBot(UTCBot):
                         pb.OrderSpecType.LIMIT,
                         pb.OrderSpecSide.BID,
                         1,  # How should this quantity be chosen?
-                        theo - 0.30,  # How should this price be chosen?
+                        5 + 0.30,  # How should this price be chosen?
                     )
                 )
+                # print(f"Buy order placed: \n \
+                #         ASSET: {asset_name} \n \
+                #         ASSET Price: {self.underlying_price} \n \
+                #         Price: {5 + 0.30} \n \
+                #         Quantity: 1")
 
                 requests.append(
                     self.place_order(
@@ -106,9 +111,14 @@ class Case2ExampleBot(UTCBot):
                         pb.OrderSpecType.LIMIT,
                         pb.OrderSpecSide.ASK,
                         1,
-                        theo + 0.30,
+                        100 - 0.30,
                     )
                 )
+                # print(f"Sell order placed: \n \
+                #         ASSET: {asset_name} \n \
+                #         ASSET Price: {self.underlying_price} \n \
+                #         Price: {100 - 0.30} \n \
+                #         Quantity: 1")
 
         # optimization trick -- use asyncio.gather to send a group of requests at the same time
         # instead of sending them one-by-one
@@ -150,7 +160,13 @@ class Case2ExampleBot(UTCBot):
         ):
             # The platform will regularly send out what day it currently is (starting from day 0 at
             # the start of the case) 
+            if floor(self.current_day) != floor(float(update.generic_msg.message)):
+                print(f"NEW DAY: {floor(float(update.generic_msg.message))}")
+                update_num = 1
             self.current_day = float(update.generic_msg.message)
+            print(f"Price update {update_num} at time: {self.current_day}")
+            update_num += 1
+            
 
 
 if __name__ == "__main__":
