@@ -167,6 +167,7 @@ class Case2ExampleBot(UTCBot):
             self.current_day = float(update.generic_msg.message)
             print(f"Price update {update_num} at time: {self.current_day}")
             update_num += 1
+            print(f"Postions: \n {self.positions}")
             
 
 
