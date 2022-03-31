@@ -160,6 +160,7 @@ class Case2ExampleBot(UTCBot):
         ):
             # The platform will regularly send out what day it currently is (starting from day 0 at
             # the start of the case) 
+            global update_num
             if floor(self.current_day) != floor(float(update.generic_msg.message)):
                 print(f"NEW DAY: {floor(float(update.generic_msg.message))}")
                 update_num = 1
