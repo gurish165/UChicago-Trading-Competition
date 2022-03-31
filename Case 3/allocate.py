@@ -16,9 +16,10 @@ analyst_3_prediction = pd.DataFrame(columns=['A', 'B', 'C', 'D', 'E', 'F', 'G', 
 def allocate_portfolio(asset_prices, asset_price_predictions_1, \
                        asset_price_predictions_2,\
                        asset_price_predictions_3):
-    window_size = 20
+    window_size = 100
     risk_aversion = 2
     diluted_shares = [425000000,246970000,576250000,4230000000,1930000000,3370000000,16320000000,7510000000,508840000]
+    m = 0.02
 
     # Loading Global Data
     global price_data
@@ -42,8 +43,10 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
         return 0
 
     ## MARKOWITZ PORTFOLIO MINIMUM ##
-    recent_price_change_data = np.array(price_percent_change[-200:], dtype=np.float64) # price_data[-200:].to_numpy()   
+    recent_price_change_data = np.array(price_percent_change[-200:], dtype=np.float64) # price_data[-200:].to_numpy()
+    expected_return = np.mean(recent_price_change_data, axis=0)
     covariance_matrix = np.cov(recent_price_change_data.T) # 9 x 9 (C)
+    inverted_covariance_matrix = np.linalg.inv(covariance_matrix)
     
     w_numerator = np.array(diluted_shares, dtype='float')*np.array(asset_prices, dtype='float')
     market_cap = np.dot(diluted_shares,asset_prices)
@@ -51,19 +54,20 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
 
     implied_expected_return = risk_aversion*np.matmul(covariance_matrix,w_mkt)
     implied_expected_return = np.array(implied_expected_return, dtype='float')
-    inverted_covariance_matrix = np.linalg.inv(covariance_matrix)
 
     # MINIMUM VARIANCE GIVEN m
-    m = 0.002
-    lamb_1 = (implied_expected_return@inverted_covariance_matrix@implied_expected_return.T \
-              - m@np.ones(9)@inverted_covariance_matrix@implied_expected_return.T) \
-              / (np.ones(9)@inverted_covariance_matrix@np.ones(9).T)@(implied_expected_return@inverted_covariance_matrix@implied_expected_return.T) \
+    lamb_1 = (implied_expected_return @ inverted_covariance_matrix @ implied_expected_return.T \
+              - m*np.ones(9)@inverted_covariance_matrix@implied_expected_return.T) \
+              / (np.ones(9)@inverted_covariance_matrix@np.ones(9).T)*(implied_expected_return@inverted_covariance_matrix@implied_expected_return.T) \
               - np.square(np.ones(9)@inverted_covariance_matrix@implied_expected_return.T)
-    lamb_2 = (m@implied_expected_return@inverted_covariance_matrix@implied_expected_return.T \
+    lamb_2 = (m*implied_expected_return@inverted_covariance_matrix@implied_expected_return.T \
               - np.ones(9)@inverted_covariance_matrix@implied_expected_return.T) \
-              / (np.ones(9)@inverted_covariance_matrix@np.ones(9).T)@(implied_expected_return@inverted_covariance_matrix@implied_expected_return.T) \
+              / (np.ones(9)@inverted_covariance_matrix@np.ones(9).T)*(implied_expected_return@inverted_covariance_matrix@implied_expected_return.T) \
               - np.square(np.ones(9)@inverted_covariance_matrix@implied_expected_return.T)
-    w = 
+    weight = lamb_1 * np.ones(9) @ inverted_covariance_matrix + lamb_2 * implied_expected_return @ inverted_covariance_matrix
+    # print(weight)
+
+    return weight
     
     ## MINIMUM VARIANCE PORTFOLIO
     row_sum_1C = inverted_covariance_matrix.sum(axis=1, dtype='float')

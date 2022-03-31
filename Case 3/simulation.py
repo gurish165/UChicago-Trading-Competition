@@ -13,7 +13,7 @@ weight = []
 daily_returns= []
 
 for i in range(len(price_data_df)):
-    if i>20:
+    if i>100:
         prev_row = np.array(price_data_df.iloc[i-1].tolist()[1:], dtype='float')
         current_row = np.array(price_data_df.iloc[i].tolist()[1:], dtype='float')
         return_pct = weight*((current_row - prev_row) / prev_row)
