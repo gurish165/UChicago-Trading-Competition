@@ -17,6 +17,10 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
                        asset_price_predictions_2,\
                        asset_price_predictions_3):
     window_size = 20
+    risk_aversion = 2
+    diluted_shares = [425000000,246970000,576250000,4230000000,1930000000,3370000000,16320000000,7510000000,508840000]
+
+    # Loading Global Data
     global price_data
     global analyst_1_prediction
     global analyst_2_prediction
@@ -40,9 +44,14 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
     ## MARKOWITZ PORTFOLIO MINIMUM VARIANCE ##
     recent_price_change_data = np.array(price_percent_change[-200:], dtype=np.float64) # price_data[-200:].to_numpy()
     # print(recent_price_change_data.shape)
-    expected_value_price = np.mean(recent_price_change_data, axis=0) # 1 x 9 (mu)
-    covariance_matrix = np.cov(recent_price_change_data.T) # 1 x 9 (sigma)
-    # print(covariance_matrix)
+    covariance_matrix = np.cov(recent_price_change_data.T) # 9 x 9 (C)
+    
+    w_numerator = np.dot(diluted_shares,asset_prices)
+    market_cap = np.sum(np.dot(diluted_shares,asset_prices))
+    w_mkt = w_numerator / market_cap
+    print(w_mkt.shape)
+
+    implied_expected_return = risk_aversion*covariance_matrix*w_mkt
 
     inverted_covariance_matrix = np.linalg.inv(covariance_matrix)
     row_sum_1C = inverted_covariance_matrix.sum(axis=1, dtype='float')
