@@ -42,8 +42,7 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
         return 0
 
     ## MARKOWITZ PORTFOLIO MINIMUM ##
-    recent_price_change_data = np.array(price_percent_change[-200:], dtype=np.float64) # price_data[-200:].to_numpy()
-    # print(recent_price_change_data.shape)
+    recent_price_change_data = np.array(price_percent_change[-200:], dtype=np.float64) # price_data[-200:].to_numpy()   
     covariance_matrix = np.cov(recent_price_change_data.T) # 9 x 9 (C)
     
     w_numerator = np.array(diluted_shares, dtype='float')*np.array(asset_prices, dtype='float')
@@ -52,9 +51,21 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
 
     implied_expected_return = risk_aversion*np.matmul(covariance_matrix,w_mkt)
     implied_expected_return = np.array(implied_expected_return, dtype='float')
-
-    ## MINIMUM VARIANCE PORTFOLIO
     inverted_covariance_matrix = np.linalg.inv(covariance_matrix)
+
+    # MINIMUM VARIANCE GIVEN m
+    m = 0.002
+    lamb_1 = (implied_expected_return@inverted_covariance_matrix@implied_expected_return.T \
+              - m@np.ones(9)@inverted_covariance_matrix@implied_expected_return.T) \
+              / (np.ones(9)@inverted_covariance_matrix@np.ones(9).T)@(implied_expected_return@inverted_covariance_matrix@implied_expected_return.T) \
+              - np.square(np.ones(9)@inverted_covariance_matrix@implied_expected_return.T)
+    lamb_2 = (m@implied_expected_return@inverted_covariance_matrix@implied_expected_return.T \
+              - np.ones(9)@inverted_covariance_matrix@implied_expected_return.T) \
+              / (np.ones(9)@inverted_covariance_matrix@np.ones(9).T)@(implied_expected_return@inverted_covariance_matrix@implied_expected_return.T) \
+              - np.square(np.ones(9)@inverted_covariance_matrix@implied_expected_return.T)
+    w = 
+    
+    ## MINIMUM VARIANCE PORTFOLIO
     row_sum_1C = inverted_covariance_matrix.sum(axis=1, dtype='float')
     total_sum_1C1 = inverted_covariance_matrix.sum(dtype='float')
     weight = row_sum_1C / total_sum_1C1
