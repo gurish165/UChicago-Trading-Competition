@@ -56,15 +56,15 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
     implied_expected_return = np.array(implied_expected_return, dtype='float')
 
     # MINIMUM VARIANCE GIVEN m
-    lamb_1 = (implied_expected_return @ inverted_covariance_matrix @ implied_expected_return.T \
-              - m*np.ones(9)@inverted_covariance_matrix@implied_expected_return.T) \
-              / (np.ones(9)@inverted_covariance_matrix@np.ones(9).T)*(implied_expected_return@inverted_covariance_matrix@implied_expected_return.T) \
-              - np.square(np.ones(9)@inverted_covariance_matrix@implied_expected_return.T)
-    lamb_2 = (m*implied_expected_return@inverted_covariance_matrix@implied_expected_return.T \
-              - np.ones(9)@inverted_covariance_matrix@implied_expected_return.T) \
-              / (np.ones(9)@inverted_covariance_matrix@np.ones(9).T)*(implied_expected_return@inverted_covariance_matrix@implied_expected_return.T) \
-              - np.square(np.ones(9)@inverted_covariance_matrix@implied_expected_return.T)
-    weight = lamb_1 * np.ones(9) @ inverted_covariance_matrix + lamb_2 * implied_expected_return @ inverted_covariance_matrix
+    lamb_1 = ((implied_expected_return @ inverted_covariance_matrix @ implied_expected_return.T \
+              - m*np.ones(9)@inverted_covariance_matrix@implied_expected_return.T)) \
+              / ((np.ones(9)@inverted_covariance_matrix@np.ones(9).T)*(implied_expected_return@inverted_covariance_matrix@implied_expected_return.T) \
+              - (np.ones(9)@inverted_covariance_matrix@implied_expected_return.T)**2)
+    lamb_2 = ((m*implied_expected_return@inverted_covariance_matrix@implied_expected_return.T \
+              - np.ones(9)@inverted_covariance_matrix@implied_expected_return.T)) \
+              / ((np.ones(9)@inverted_covariance_matrix@np.ones(9).T)*(implied_expected_return@inverted_covariance_matrix@implied_expected_return.T) \
+              - (np.ones(9)@inverted_covariance_matrix@implied_expected_return.T)**2)
+    weight = (lamb_1 * np.ones(9) @ inverted_covariance_matrix) + (lamb_2 * implied_expected_return @ inverted_covariance_matrix)
     # print(weight)
 
     return weight
