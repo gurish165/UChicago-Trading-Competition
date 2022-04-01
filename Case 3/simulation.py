@@ -15,7 +15,7 @@ daily_returns_by_stock = []
 weights_history = []
 
 for i in range(len(price_data_df)):
-    if i> allocate.window_size:
+    if i> alloc.window_size:
         weights_history.append(weight)
         prev_row = np.array(price_data_df.iloc[i-1].tolist()[1:], dtype='float')
         current_row = np.array(price_data_df.iloc[i].tolist()[1:], dtype='float')
@@ -29,7 +29,7 @@ for i in range(len(price_data_df)):
     analyst1_row = analyst_1_prediction_df.iloc[i].values.tolist()[1:]
     analyst2_row = analyst_2_prediction_df.iloc[i].values.tolist()[1:]
     analyst3_row = analyst_3_prediction_df.iloc[i].values.tolist()[1:]
-    weight = allocate.allocate_portfolio(price_row, analyst1_row, analyst2_row, analyst3_row)
+    weight = alloc.allocate_portfolio(price_row, analyst1_row, analyst2_row, analyst3_row)
 
 daily_returns_by_stock = np.array(daily_returns_by_stock, dtype='float')
 weights_history = np.array(weights_history, dtype='float')
