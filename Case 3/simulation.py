@@ -14,15 +14,21 @@ daily_returns= []
 daily_returns_by_stock = []
 weights_history = []
 
+srs = []
+
 for i in range(len(price_data_df)):
     if i> alloc.window_size:
         weights_history.append(weight)
         prev_row = np.array(price_data_df.iloc[i-1].tolist()[1:], dtype='float')
         current_row = np.array(price_data_df.iloc[i].tolist()[1:], dtype='float')
         return_pct = weight*((current_row - prev_row) / prev_row)
+        std = np.std(((current_row - prev_row) / prev_row))
         # print(return_pct)
         daily_returns_by_stock.append(return_pct)
         daily_returns.append(np.sum(return_pct))
+        sharpe_ratio = np.sum(return_pct) / std
+        srs.append(sharpe_ratio)
+        print(f"SHARPE RATIO: {sharpe_ratio}")
         # print("ACTUAL DAILY RETURN:", ((current_row - prev_row) / prev_row))
     
     price_row = price_data_df.iloc[i].tolist()[1:]
@@ -43,4 +49,6 @@ print("NAN VALUES:", np.count_nonzero(np.isnan(daily_returns)))
 print("Mean :",np.mean(daily_returns))
 print("Std :", np.std(daily_returns))
 sharpe_ratio = np.mean(daily_returns) / np.std(daily_returns)
-print(f"SHARPE RATIO: {sharpe_ratio}")
+print(f"SHARPE RATIO FINAL: {sharpe_ratio}")
+print("SHARP RATIO MEAN:", np.mean(srs))
+print("SHARPE MAX:", np.max(srs))
