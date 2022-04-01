@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import allocate
+import alloc
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -38,7 +38,8 @@ np.savetxt("weights_history.csv", weights_history, delimiter=",")
 
 # SHARPE RATIO
 daily_returns = np.array(daily_returns, dtype='float')
-print(daily_returns)
+print("DAILY RETURNS :", daily_returns)
+print("NAN VALUES:", np.count_nonzero(np.isnan(daily_returns)))
 print("Mean :",np.mean(daily_returns))
 print("Std :", np.std(daily_returns))
 sharpe_ratio = np.mean(daily_returns) / np.std(daily_returns)

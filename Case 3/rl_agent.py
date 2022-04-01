@@ -17,8 +17,10 @@ class AllocateEnv(gym.Env):
         # allocation of each stock (processed later)
         self.action_space = spaces.Box(self.observation_min_1d, self.observation_high_1d, dtype=np.float32)
         # analyst 1, analyst 2, analyst 3, window price data
-        self.observation_space = spaces.Tuple((spaces.Box(self.observation_min_1d, self.observation_high_1d, dtype=np.float32), spaces.Box(self.observation_min_1d, self.observation_high_1d, dtype=np.float32),
-                                               spaces.Box(self.observation_min_1d, self.observation_high_1d, dtype=np.float32), spaces.Box(self.observation_min_2d, self.observation_high_2d, dtype=np.float32)))
+        self.observation_space = spaces.Dict({"prediction1": spaces.Box(self.observation_min_1d, self.observation_high_1d, dtype=np.float32), 
+                                              "prediction2": spaces.Box(self.observation_min_1d, self.observation_high_1d, dtype=np.float32),
+                                              "prediction3": spaces.Box(self.observation_min_1d, self.observation_high_1d, dtype=np.float32), 
+                                              "window_price": spaces.Box(self.observation_min_2d, self.observation_high_2d, dtype=np.float32)})
         self.ts = self.window_size # timestep
 
         self.price = price
@@ -26,8 +28,8 @@ class AllocateEnv(gym.Env):
         self.a_pred2 = a_pred2
         self.a_pred3 = a_pred3
 
-        self.obs_begin = (self.a_pred1[self.ts][:], self.a_pred2[self.ts][:], self.a_pred3[self.ts][:],
-                          self.price[self.ts-self.window_size:self.ts])
+        # self.obs_begin = (self.a_pred1[self.ts][:], self.a_pred2[self.ts][:], self.a_pred3[self.ts][:],
+        #                   self.price[self.ts-self.window_size:self.ts])
 
         self.returns = []
 
@@ -45,21 +47,27 @@ class AllocateEnv(gym.Env):
         # set reward based on profit
         reward = self.get_reward(action)
         # set observation
-        observation = (np.array(self.a_pred1[self.ts], dtype=np.float32), np.array(self.a_pred2[self.ts], dtype=np.float32),
-                        np.array(self.a_pred3[self.ts][:], dtype=np.float32),
-                       np.array(self.price[self.ts-self.window_size:self.ts], dtype=np.float32))
+        observation = {"prediciton1": np.array(self.a_pred1[self.ts], dtype=np.float32), 
+                       "prediction2": np.array(self.a_pred2[self.ts], dtype=np.float32),
+                       "prediction3": np.array(self.a_pred3[self.ts], dtype=np.float32),
+                       "window_price:": np.array(self.price[self.ts-self.window_size:self.ts], dtype=np.float32)}
         self.ts += 1
         done = False
-        if (self.ts >= len(self.price)-1):
+        if (self.ts >= len(self.price)-2):
             done = True
 
         self.returns.append(reward)
+        # observation = np.tuple(observation, dtype=np.float32)
         return observation, reward, done, {}
 
     def reset(self):
         self.ts = self.window_size
         self.returns = []
-        return (np.zeros((9,), dtype=np.float32), np.zeros((9,), dtype=np.float32), np.zeros((9,), dtype=np.float32), np.zeros((9,self.window_size), dtype=np.float32))
+        pass
+        # return {"prediction1": (np.zeros((9,), dtype=np.float32)),
+        #         "prediction2": (np.zeros((9,), dtype=np.float32)), 
+        #         "prediciton3": (np.zeros((9,), dtype=np.float32)), 
+        #         "window_price:": (np.zeros((9,self.window_size), dtype=np.float32))}
 
     def render(self):
         self.returns = np.array(self.returns, dtype=np.float32)

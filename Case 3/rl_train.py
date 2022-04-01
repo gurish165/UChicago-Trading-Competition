@@ -39,7 +39,7 @@ config = {
     },
 }
 
-agent = PPOTrainer(env=env_name, config=config)
+agent = PPOTrainer('MultiInputPolicy', env=env_name, config=config)
 
 #from tqdm import tqdm
 
@@ -51,5 +51,6 @@ train_iters = 10
 # for i in range(args.iter):
 #     print('iter: ',i)
 result = agent.train()
-
+print("\n\nTRAINED!")
 agent.evaluate()
+print("\n\nEVAULAED!")

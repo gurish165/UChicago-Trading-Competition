@@ -26,13 +26,14 @@ a1_clustered_percent_change = pd.DataFrame(columns=['AC', 'DEF', 'GH', 'B', 'I']
 a2_clustered_percent_change = pd.DataFrame(columns=['AC', 'DEF', 'GH', 'B', 'I'])
 a3_clustered_percent_change = pd.DataFrame(columns=['AC', 'DEF', 'GH', 'B', 'I'])
 
-window_size = 10
+# window_size = 10
 
 def allocate_portfolio(asset_prices, asset_price_predictions_1, \
                        asset_price_predictions_2,\
                        asset_price_predictions_3):
     ## HYPERPARAMETER
-    global window_size
+    # global window_size
+    window_size = 10
     risk_aversion = 1
 
     # Loading Global Data
@@ -113,9 +114,9 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
     #     plt.colorbar()
     #     plt.savefig('correlation.png')
 
-    # IF IT DIDN'T PASS THE WINDOW SIZE YET
-    if len(price_data)+1 < window_size:
-        return np.zeros(9)
+    # # IF IT DIDN'T PASS THE WINDOW SIZE YET
+    # if len(price_data)+1 < window_size:
+    #     return np.zeros(9)
 
     ## PRICE_CHANGE && PRICE COVARIANCE MATRIX
     recent_price_change_data = np.array(price_percent_change[-window_size:], dtype=np.float64) # price_data[-200:].to_numpy()
@@ -123,20 +124,20 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
     covariance_matrix = np.cov(recent_price_change_data.T) # / np.sqrt(window_size-1)# 9 x 9 (SIMGA)
     inverted_covariance_matrix = np.linalg.inv(covariance_matrix)
     
-    ## CALCULATING MARKET CAPITALIZATION WEIGHTS
-    w_numerator = np.array(diluted_shares, dtype='float')*np.array(asset_prices, dtype='float')
-    market_cap = np.dot(diluted_shares,asset_prices)
-    w_mkt = w_numerator / market_cap
+    # ## CALCULATING MARKET CAPITALIZATION WEIGHTS
+    # w_numerator = np.array(diluted_shares, dtype='float')*np.array(asset_prices, dtype='float')
+    # market_cap = np.dot(diluted_shares,asset_prices)
+    # w_mkt = w_numerator / market_cap
 
-    ## BLACK-LITTERMAN: IMPLIED EXPECTED RETURN
-    implied_expected_return = risk_aversion*np.matmul(covariance_matrix,w_mkt)
-    implied_expected_return = np.array(implied_expected_return, dtype='float') # (PI)
-    # print("IMPLIED EXPECTED RETURN:\n", implied_expected_return)
+    # ## BLACK-LITTERMAN: IMPLIED EXPECTED RETURN
+    # implied_expected_return = risk_aversion*np.matmul(covariance_matrix,w_mkt)
+    # implied_expected_return = np.array(implied_expected_return, dtype='float') # (PI)
+    # # print("IMPLIED EXPECTED RETURN:\n", implied_expected_return)
 
 
-    ## BLACK-LITTERMAN: EXPECTED RETURN
+    # ## BLACK-LITTERMAN: EXPECTED RETURN
 
-    # THREE ANALYSTS COVARIANCE MATRIX && EXPECTED RETURN
+    # # THREE ANALYSTS COVARIANCE MATRIX && EXPECTED RETURN
     p1_price_change_data = np.array(analyst_1_percent_change[-window_size:], dtype=np.float64)
     p2_price_change_data = np.array(analyst_2_percent_change[-window_size:], dtype=np.float64)
     p3_price_change_data = np.array(analyst_3_percent_change[-window_size:], dtype=np.float64)
@@ -146,33 +147,33 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
     analyst_expected_return = np.mean(analyst_price_chage_data, axis=0) # 9 X 1 (Q)
     
     black_litterman_cov_matrix = np.linalg.inv(inverted_covariance_matrix + inverted_analyst_covariance_matrix)
-    expected_return = black_litterman_cov_matrix @ ((inverted_covariance_matrix @ implied_expected_return) + inverted_analyst_covariance_matrix @ analyst_expected_return)
+    # expected_return = black_litterman_cov_matrix @ ((inverted_covariance_matrix @ implied_expected_return) + inverted_analyst_covariance_matrix @ analyst_expected_return)
 
-    expected_return = analyst_expected_return
-    ## HYPERPARAMETER: SET M VALUE
-    m = 10 #  + np.std(expected_return) 
+    # expected_return = analyst_expected_return
+    # ## HYPERPARAMETER: SET M VALUE
+    # m = 10 #  + np.std(expected_return) 
 
-    ## MINIMUM VARIANCE GIVEN m
-    lamb_1 = ((expected_return @ black_litterman_cov_matrix @ expected_return.T) \
-              - (m * np.ones(9) @ black_litterman_cov_matrix @ expected_return.T)) \
-              / (((np.ones(9) @ black_litterman_cov_matrix @ np.ones(9).T) * (expected_return @black_litterman_cov_matrix @ expected_return.T)) \
-              - (np.ones(9) @ black_litterman_cov_matrix @ expected_return.T)**2)
+    # ## MINIMUM VARIANCE GIVEN m
+    # lamb_1 = ((expected_return @ black_litterman_cov_matrix @ expected_return.T) \
+    #           - (m * np.ones(9) @ black_litterman_cov_matrix @ expected_return.T)) \
+    #           / (((np.ones(9) @ black_litterman_cov_matrix @ np.ones(9).T) * (expected_return @black_litterman_cov_matrix @ expected_return.T)) \
+    #           - (np.ones(9) @ black_litterman_cov_matrix @ expected_return.T)**2)
 
-    lamb_2 = ((m * np.ones(9) @ black_litterman_cov_matrix @ np.ones(9).T) \
-              - (np.ones(9) @ black_litterman_cov_matrix @ expected_return.T)) \
-              / (((np.ones(9) @ black_litterman_cov_matrix @ np.ones(9).T)*(expected_return @ black_litterman_cov_matrix @ expected_return.T)) \
-              - (np.ones(9) @ black_litterman_cov_matrix @ expected_return.T)**2)
+    # lamb_2 = ((m * np.ones(9) @ black_litterman_cov_matrix @ np.ones(9).T) \
+    #           - (np.ones(9) @ black_litterman_cov_matrix @ expected_return.T)) \
+    #           / (((np.ones(9) @ black_litterman_cov_matrix @ np.ones(9).T)*(expected_return @ black_litterman_cov_matrix @ expected_return.T)) \
+    #           - (np.ones(9) @ black_litterman_cov_matrix @ expected_return.T)**2)
 
-    weight = (lamb_1 * np.ones(9) @ black_litterman_cov_matrix) + (lamb_2 * expected_return @ black_litterman_cov_matrix)
-    # print(weight)
+    # weight = (lamb_1 * np.ones(9) @ black_litterman_cov_matrix) + (lamb_2 * expected_return @ black_litterman_cov_matrix)
+    # # print(weight)
 
-    # return -weight
+    # # return -weight
     
-    ## MINIMUM VARIANCE PORTFOLIO
-    row_sum_1C = black_litterman_cov_matrix.sum(axis=1, dtype='float')
-    total_sum_1C1 = black_litterman_cov_matrix.sum(dtype='float')
-    weight_1 = np.array(row_sum_1C / total_sum_1C1)
-    # return weight
+    # ## MINIMUM VARIANCE PORTFOLIO
+    # row_sum_1C = black_litterman_cov_matrix.sum(axis=1, dtype='float')
+    # total_sum_1C1 = black_litterman_cov_matrix.sum(dtype='float')
+    # weight_1 = np.array(row_sum_1C / total_sum_1C1)
+    # # return weight
 
     ######################################################################################################################################################################################################
 
@@ -224,43 +225,31 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
                         (c_weight[1])/3, (c_weight[1])/3, \
                         (c_weight[2])/2, (c_weight[2])/2,
                         c_weight[4]])
-    # print(np.sum(weight))
-    return weight_2
-    m = 0.2 #  + np.std(expected_return) 
 
-    ## MINIMUM VARIANCE GIVEN m
-    lamb_1 = ((c_expected_return @ c_black_litterman_cov_matrix @ c_expected_return.T) \
-              - (m * np.ones(5) @ c_black_litterman_cov_matrix @ c_expected_return.T)) \
-              / (((np.ones(5) @ c_black_litterman_cov_matrix @ np.ones(5).T) * (c_expected_return @ c_black_litterman_cov_matrix @ c_expected_return.T)) \
-              - (np.ones(5) @ c_black_litterman_cov_matrix @ c_expected_return.T)**2)
+    ## RPA
+    weight_rpa = np.multiply(weight_2, (weight_2 @ covariance_matrix)) / np.sqrt(weight_2 @ black_litterman_cov_matrix @ weight_2.T)
+    weight_rpa = np.array(weight_rpa)
 
-    lamb_2 = ((m * np.ones(5) @ c_black_litterman_cov_matrix @ np.ones(5).T) \
-              - (np.ones(5) @ c_black_litterman_cov_matrix @ c_expected_return.T)) \
-              / (((np.ones(5) @ c_black_litterman_cov_matrix @ np.ones(5).T) * (c_expected_return @ c_black_litterman_cov_matrix @ c_expected_return.T)) \
-              - (np.ones(5) @ c_black_litterman_cov_matrix @ c_expected_return.T)**2)
+    ## RSI
+    # rsi_timeframe = price_percent_change[-10:]
+    # rsi_timeframe_T = np.transpose(rsi_timeframe)
+    # def positive_avg(arr):
+    #     return arr[arr > 0].mean()
+    # def negative_avg(arr):
+    #     return arr[arr < 0].mean()
+    # avg_gain = np.apply_along_axis(positive_avg, 1, rsi_timeframe_T)
+    # avg_loss = -np.apply_along_axis(negative_avg, 1, rsi_timeframe_T)
+    # rsi = 100 - (100/(1+(avg_gain/14)/(avg_loss/14)))
+    # weight_rsi = 50 - rsi
+    # # weight_sq = (50 - rsi)**2
+    # # sign_idx = np.sign(weight_rsi)
+    # # weight_rsi = np.multiply(weight_sq, sign_idx) * 0.00001
+    # weight_rsi[np.isnan(weight_rsi)] = 0
 
-    c_weight = (lamb_1 * np.ones(5) @ c_black_litterman_cov_matrix) + (lamb_2 * c_expected_return @ c_black_litterman_cov_matrix)
-    weight = [c_weight[0]/2, c_weight[3], \
-              c_weight[0]/2, (c_weight[1])/3, \
-              (c_weight[1])/3, (c_weight[1])/3, \
-              (c_weight[2])/2, (c_weight[2])/2,
-              c_weight[4]]
-    return -np.array(weight, dtype='float')
+    final_weights = weight_2 *0.97 + weight_rpa * 0.03
+    # final_weights = final_weights + weight_rsi * 0.00001
+    # final_weights = np.array(final_weights / np.sum(final_weights))
 
-
-
-    # This simple strategy equally weights all assets every period
-    # (called a 1/n strategy).
-    n_assets = len(asset_prices)
-    weights = np.repeat(1 / n_assets, n_assets)
-    return weights
-
-'''
-1. Calculate the expected return and std. using past x (window size) data and calcuate weigths for MVP
-2. Incooperate the analyst predictions to make adjustments to my weights (depends on what they think will happen next month)
-3. Set weights based on Large Cap vs Small Cap && Look at the past data on how they performed
-4. Calculate Daily Return ( weights*today_data / weights*tmr_data )
-
-5. Come up with something creative
-
-'''
+    # print(np.sum(final_weights))
+    # print(final_weights)
+    return final_weights
