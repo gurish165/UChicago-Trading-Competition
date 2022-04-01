@@ -26,7 +26,7 @@ a1_clustered_percent_change = pd.DataFrame(columns=['AC', 'DEF', 'GH', 'B', 'I']
 a2_clustered_percent_change = pd.DataFrame(columns=['AC', 'DEF', 'GH', 'B', 'I'])
 a3_clustered_percent_change = pd.DataFrame(columns=['AC', 'DEF', 'GH', 'B', 'I'])
 
-window_size = 15
+window_size = 10
 
 def allocate_portfolio(asset_prices, asset_price_predictions_1, \
                        asset_price_predictions_2,\
@@ -55,7 +55,7 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
     if len(price_data)>0:
         # ASSET PRICE PERCENT CHANGE
         old_data = price_data.iloc[-1].values.tolist()
-        percent_change = (np.array(asset_prices, dtype=np.float64) - np.array(old_data, dtype=np.float64)) / np.array(old_data, dtype=np.float64)
+        percent_change = (np.array(asset_prices, dtype=np.float64) - np.array(old_data, dtype=np.float64)) / np.array(old_data, dtype=np.float64)*100
         price_percent_change = price_percent_change.append(pd.Series(percent_change, index = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']), ignore_index=True)
 
         # NUMBER OF DAYS LEFT BEFORE THE NEXT MONTH
@@ -63,19 +63,19 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
 
         # PREDICTION OF ANALYST 1 PCT CHANGE
         old_p1_data = analyst_1_prediction.iloc[-1].values.tolist()
-        p1_percent_change = (np.array(asset_prices, dtype=np.float64) - np.array(old_p1_data, dtype=np.float64)) / np.array(asset_prices, dtype=np.float64)
+        p1_percent_change = (np.array(asset_prices, dtype=np.float64) - np.array(old_p1_data, dtype=np.float64)) / np.array(asset_prices, dtype=np.float64)*100
         p1_percent_change /= num_days_left_in_month
         analyst_1_percent_change = analyst_1_percent_change.append(pd.Series(p1_percent_change, index = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']), ignore_index=True)
 
         # PREDICTION OF ANALYST 2 PCT CHANGE
         old_p2_data = analyst_2_prediction.iloc[-1].values.tolist()
-        p2_percent_change = (np.array(asset_prices, dtype=np.float64) - np.array(old_p2_data, dtype=np.float64)) / np.array(asset_prices, dtype=np.float64)
+        p2_percent_change = (np.array(asset_prices, dtype=np.float64) - np.array(old_p2_data, dtype=np.float64)) / np.array(asset_prices, dtype=np.float64)*100
         p2_percent_change /= num_days_left_in_month
         analyst_2_percent_change = analyst_2_percent_change.append(pd.Series(p2_percent_change, index = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']), ignore_index=True)
 
         # PREDICTION OF ANALYST 3 PCT CHANGE
         old_p3_data = analyst_3_prediction.iloc[-1].values.tolist()
-        p3_percent_change = (np.array(asset_prices, dtype=np.float64) - np.array(old_p3_data, dtype=np.float64)) / np.array(asset_prices, dtype=np.float64)
+        p3_percent_change = (np.array(asset_prices, dtype=np.float64) - np.array(old_p3_data, dtype=np.float64)) / np.array(asset_prices, dtype=np.float64)*100
         p3_percent_change /= num_days_left_in_month
         analyst_3_percent_change = analyst_3_percent_change.append(pd.Series(p3_percent_change, index = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']), ignore_index=True)
 
@@ -86,6 +86,7 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
         cluster_2_DEF = (np.array(asset_prices[3]+asset_prices[4]+asset_prices[5], dtype=np.float64) - np.array(old_data[3] + old_data[4] + old_data[5], dtype=np.float64)) / np.array(old_data[3] + old_data[4] + old_data[5], dtype=np.float64)
         cluster_3_GH = (np.array(asset_prices[6]+asset_prices[7], dtype=np.float64) - np.array(old_data[6] + old_data[7], dtype=np.float64)) / np.array(old_data[6] + old_data[7], dtype=np.float64)
         cluster_pct_change = [cluster_1_AC, cluster_2_DEF, cluster_3_GH, percent_change[1], percent_change[8]]
+        cluster_pct_change = np.array(cluster_pct_change)*100.0
         clustered_percent_change = clustered_percent_change.append(pd.Series(cluster_pct_change, index = ['AC', 'DEF', 'GH', 'B', 'I']), ignore_index=True)
 
         a1_percent_change = [np.mean(p1_percent_change[0]+p1_percent_change[2]), np.mean(p1_percent_change[3]+p1_percent_change[4]+p1_percent_change[5]), np.mean(p1_percent_change[6]+p1_percent_change[7]), p1_percent_change[1], p1_percent_change[8]]
@@ -170,7 +171,7 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
     ## MINIMUM VARIANCE PORTFOLIO
     row_sum_1C = black_litterman_cov_matrix.sum(axis=1, dtype='float')
     total_sum_1C1 = black_litterman_cov_matrix.sum(dtype='float')
-    weight = row_sum_1C / total_sum_1C1
+    weight_1 = np.array(row_sum_1C / total_sum_1C1)
     # return weight
 
     ######################################################################################################################################################################################################
@@ -212,20 +213,20 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
     c_black_litterman_cov_matrix = np.linalg.inv(inv_clustered_covariance_matrix + c_inverted_analyst_covariance_matrix)
     c_expected_return = c_black_litterman_cov_matrix @ ((inv_clustered_covariance_matrix @ c_implied_expected_return) + c_inverted_analyst_covariance_matrix @ c_analyst_expected_return)
 
-    # c_expected_return = c_analyst_expected_return
+    c_expected_return = c_analyst_expected_return
 
     ## MINIMUM VARIANCE PORTFOLIO
     c_row_sum_1C = c_black_litterman_cov_matrix.sum(axis=1, dtype='float')
     c_total_sum_1C1 = c_black_litterman_cov_matrix.sum(dtype='float')
     c_weight = c_row_sum_1C / c_total_sum_1C1
-    weight = [c_weight[0]/2, c_weight[3], \
-              c_weight[0]/2, (c_weight[1])/3, \
-              (c_weight[1])/3, (c_weight[1])/3, \
-              (c_weight[2])/2, (c_weight[2])/2,
-              c_weight[4]]
+    weight_2 = np.array([c_weight[0]/2, c_weight[3], \
+                        c_weight[0]/2, (c_weight[1])/3, \
+                        (c_weight[1])/3, (c_weight[1])/3, \
+                        (c_weight[2])/2, (c_weight[2])/2,
+                        c_weight[4]])
     # print(np.sum(weight))
-    return weight
-    m = 0.02 #  + np.std(expected_return) 
+    return weight_2
+    m = 0.2 #  + np.std(expected_return) 
 
     ## MINIMUM VARIANCE GIVEN m
     lamb_1 = ((c_expected_return @ c_black_litterman_cov_matrix @ c_expected_return.T) \
