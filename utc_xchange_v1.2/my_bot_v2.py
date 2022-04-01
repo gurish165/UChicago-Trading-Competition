@@ -3,13 +3,12 @@
 from dataclasses import astuple
 from datetime import datetime
 from utc_bot import UTCBot, start_bot
-from py_vollib import black_scholes as bs
 from black_scholes_volatility import black_scholes as my_bs
 import proto.utc_bot as pb
 import betterproto
 import numpy as np
 import asyncio
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 option_strikes = [90, 95, 100, 105, 110]
@@ -43,7 +42,7 @@ class Case2ExampleBot(UTCBot):
 
         # Stores the current value of the underlying asset
         self.underlying_price = 100
-        self.account_balance = 0
+        self.pnls = []
         self.price_path = []
         self.puts100 = []
         self.calls100 = []
@@ -57,27 +56,10 @@ class Case2ExampleBot(UTCBot):
         an example bot, we just use a placeholder value here. We recommend that you look into
         different ways of finding what the true volatility of the underlying is.
         """
-        # if(self.price_path[-1] < 99.5):
-        #     print("-----------------------------------------------")
-        # stdev = np.std(self.price_path[-100:])
-        # print (f"STDEV SHIFT: {stdev}")
-        # scaling_shifted = np.log(stdev/2.5 + 0.375) + 1
-        # print (f"SCALE SHIFT: {scaling_shifted}")
-        # stdev = np.std(self.price_path)
-        # print (f"STDEVNORMAL: {stdev}")
-        
+
         if(len(self.price_path) <= 20):
             return 0.2
         else:
-            # close_prices = self.price_path[-10:]
-            # shifted = np.roll(close_prices, 1)
-            # shifted[0] = 1
-            # # print(close_prices)
-            # # print(shifted)
-            # divided = close_prices/shifted
-            # # print(divided)
-            # log_returns = np.log(divided[1:])
-            # volatility = log_returns.std()*252**0.5
             stdev = np.std(self.price_path[-100:])
             volatility = 0.9* np.log(stdev/2.5 + 0.375) + 0.9
             return volatility
@@ -102,9 +84,9 @@ class Case2ExampleBot(UTCBot):
         """
         per_share_val = 0
         if(flag == 'C' or flag == 'c'):
-            per_share_val = bs.black_scholes('c', underlying_px, strike_px, time_to_expiry, 0.00, volatility)
+            per_share_val = my_bs('c', underlying_px, strike_px, time_to_expiry, 0.00, volatility)
         elif(flag == 'P' or flag == 'p'):
-            per_share_val = bs.black_scholes('p', underlying_px, strike_px, time_to_expiry, 0.00, volatility)
+            per_share_val = my_bs('p', underlying_px, strike_px, time_to_expiry, 0.00, volatility)
         if (per_share_val < 0.1):
             per_share_val = 0.1
         return np.round(per_share_val, 1)
@@ -169,7 +151,7 @@ class Case2ExampleBot(UTCBot):
         ax2.plot(self.calls100)
         ax3.plot(self.puts100)
         ax4.plot(self.vols)
-        plt.savefig('price_path_test3.png')
+        plt.savefig('price_path_test4.png')
 
     def update_account_balance(self):
         value = 0
@@ -221,7 +203,7 @@ class Case2ExampleBot(UTCBot):
                 await self.update_options_quotes()
             # print("Underlying ", self.underlying_price)
             if (self.current_day == 4.995):
-                self.market_closed()
+                # self.market_closed()
                 pass
 
 

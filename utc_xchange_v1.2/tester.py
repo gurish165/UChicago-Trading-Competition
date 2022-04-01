@@ -2,6 +2,7 @@ from py_vollib import black_scholes as bs
 from py_vollib import black as blk
 import numpy as np
 import pandas as pd
+from black_scholes_volatility import black_scholes as my_bs
 
 
 def main():
@@ -24,10 +25,16 @@ def main():
     data = pd.read_csv("../amd-data.csv")
     close_prices = data["prccd"][-10:]
     print(close_prices)
+    print(close_prices.shift())
+    print(close_prices/close_prices.shift())
     data['Log returns'] = np.log(close_prices/close_prices.shift())
     volatility = data['Log returns'].std()*252**0.5
     print(volatility)
-
+    print("----------------------------------")
+    c = bs.black_scholes('c', underlying, strike, yte, 0.00, stdev)
+    c2 = my_bs('c', underlying, strike, yte, 0.00, stdev)
+    print(f"1: {c}")
+    print(f"2: {c2}")
 
 if __name__ == "__main__":
     main()
