@@ -43,7 +43,7 @@ class Case2ExampleBot(UTCBot):
         # Stores the current value of the underlying asset
         self.underlying_price = 100
         self.time_tick = 0
-        self.pnls = [0.0] * 1000
+        self.pnls = [0 for i in range(1000)]
         self.price_path = []
         self.puts100 = []
         self.calls100 = []
@@ -182,6 +182,9 @@ class Case2ExampleBot(UTCBot):
         ax4.plot(self.pnls)
         plt.savefig('price_path_test4.png')
 
+    def update_account_balance(self):
+        value = 0
+        self.account_val.append(value)
 
     async def handle_exchange_update(self, update: pb.FeedMessage):
         kind, _ = betterproto.which_one_of(update, "msg")
@@ -189,12 +192,8 @@ class Case2ExampleBot(UTCBot):
         if kind == "pnl_msg":
             # When you hear from the exchange about your PnL, print it out
             print("My PnL:", update.pnl_msg.m2m_pnl)
-            index = self.time_tick
-            self.pnls[index] = float(update.pnl_msg.m2m_pnl)
-            for _ in range(3):
-                if index != 999:
-                    index += 1
-                    self.pnls[index] = float(update.pnl_msg.m2m_pnl)
+            self.pnls[self.time_tick] = update.pnl_msg.m2m_pnl
+
 
         elif kind == "fill_msg":
             # When you hear about a fill you had, update your positions
