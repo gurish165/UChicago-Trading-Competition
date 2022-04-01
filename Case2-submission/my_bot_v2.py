@@ -3,7 +3,6 @@
 from dataclasses import astuple
 from datetime import datetime
 from utc_bot import UTCBot, start_bot
-from py_vollib import black_scholes as bs
 from black_scholes_volatility import black_scholes as my_bs
 import proto.utc_bot as pb
 import betterproto
@@ -43,13 +42,16 @@ class Case2ExampleBot(UTCBot):
 
         # Stores the current value of the underlying asset
         self.underlying_price = 100
-        self.account_balance = 0
+        self.time_tick = 0
+        self.pnls = [0 for i in range(1000)]
         self.price_path = []
         self.puts100 = []
         self.calls100 = []
         self.vols = []
-        self.bid_orderID = "a"
-        self.ask_orderID = "a"
+        self.greek_limits = {
+            
+        }
+
 
     def compute_vol_estimate(self) -> float:
         """
@@ -57,27 +59,10 @@ class Case2ExampleBot(UTCBot):
         an example bot, we just use a placeholder value here. We recommend that you look into
         different ways of finding what the true volatility of the underlying is.
         """
-        # if(self.price_path[-1] < 99.5):
-        #     print("-----------------------------------------------")
-        # stdev = np.std(self.price_path[-100:])
-        # print (f"STDEV SHIFT: {stdev}")
-        # scaling_shifted = np.log(stdev/2.5 + 0.375) + 1
-        # print (f"SCALE SHIFT: {scaling_shifted}")
-        # stdev = np.std(self.price_path)
-        # print (f"STDEVNORMAL: {stdev}")
-        
+
         if(len(self.price_path) <= 20):
             return 0.2
         else:
-            # close_prices = self.price_path[-10:]
-            # shifted = np.roll(close_prices, 1)
-            # shifted[0] = 1
-            # # print(close_prices)
-            # # print(shifted)
-            # divided = close_prices/shifted
-            # # print(divided)
-            # log_returns = np.log(divided[1:])
-            # volatility = log_returns.std()*252**0.5
             stdev = np.std(self.price_path[-100:])
             volatility = 0.9* np.log(stdev/2.5 + 0.375) + 0.9
             return volatility
@@ -102,12 +87,47 @@ class Case2ExampleBot(UTCBot):
         """
         per_share_val = 0
         if(flag == 'C' or flag == 'c'):
-            per_share_val = bs.black_scholes('c', underlying_px, strike_px, time_to_expiry, 0.00, volatility)
+            per_share_val = my_bs('c', underlying_px, strike_px, time_to_expiry, 0.00, volatility)
         elif(flag == 'P' or flag == 'p'):
-            per_share_val = bs.black_scholes('p', underlying_px, strike_px, time_to_expiry, 0.00, volatility)
+            per_share_val = my_bs('p', underlying_px, strike_px, time_to_expiry, 0.00, volatility)
         if (per_share_val < 0.1):
             per_share_val = 0.1
         return np.round(per_share_val, 1)
+
+    def add_trades(self):
+        requests = []
+        day = np.floor(self.current_day)
+        dte = 26-day
+        time_to_expiry = dte / 252
+        theo = self.compute_options_price('p', self.underlying_price, 100, time_to_expiry, self.compute_vol_estimate())
+        
+        if(len(self.price_path) == 200):
+            for i in range(20):
+                label = f"covid_{i}"
+                requests.append(
+                    self.modify_order(
+                        label,
+                        "UC100P",
+                        pb.OrderSpecType.LIMIT,
+                        pb.OrderSpecSide.BID,
+                        1,
+                        theo,
+                    )
+                )
+        if(theo*100 > 900):
+            for i in range(20):
+                label = f"covid_{i}"
+                requests.append(
+                    self.modify_order(
+                        label,
+                        "UC100P",
+                        pb.OrderSpecType.LIMIT,
+                        pb.OrderSpecSide.ASK,
+                        1,
+                        theo,
+                    )
+                )
+        return requests
 
     async def update_options_quotes(self):
         """
@@ -127,16 +147,7 @@ class Case2ExampleBot(UTCBot):
         # print(f"DTE: {dte}")
         print(f"Vol: {vol}")
 
-        requests = []
-        requests.append(
-            self.modify_order(
-                self.bid_orderID,
-                "UC",
-                pb.OrderSpecType.MARKET,
-                pb.OrderSpecSide.BID,
-                1
-            )
-        )
+        requests = self.add_trades()        
         
         for strike in option_strikes:
             for flag in ["C"]: # removed "P"
@@ -168,8 +179,8 @@ class Case2ExampleBot(UTCBot):
         ax1.plot(y)
         ax2.plot(self.calls100)
         ax3.plot(self.puts100)
-        ax4.plot(self.vols)
-        plt.savefig('price_path_test3.png')
+        ax4.plot(self.pnls)
+        plt.savefig('price_path_test4.png')
 
     def update_account_balance(self):
         value = 0
@@ -181,7 +192,8 @@ class Case2ExampleBot(UTCBot):
         if kind == "pnl_msg":
             # When you hear from the exchange about your PnL, print it out
             print("My PnL:", update.pnl_msg.m2m_pnl)
-            
+            self.pnls[self.time_tick] = update.pnl_msg.m2m_pnl
+
 
         elif kind == "fill_msg":
             # When you hear about a fill you had, update your positions
@@ -214,6 +226,7 @@ class Case2ExampleBot(UTCBot):
             # the start of the case) 
             # print(f"Positions: {self.positions}")
             self.current_day = float(update.generic_msg.message)
+            self.time_tick += 1
             self.price_path.append(self.underlying_price)
             print(f"Day: {self.current_day}")
             print(f"New Price: {self.underlying_price}")
