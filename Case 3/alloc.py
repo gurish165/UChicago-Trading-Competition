@@ -26,7 +26,7 @@ a1_clustered_percent_change = pd.DataFrame(columns=['AC', 'DEF', 'GH', 'B', 'I']
 a2_clustered_percent_change = pd.DataFrame(columns=['AC', 'DEF', 'GH', 'B', 'I'])
 a3_clustered_percent_change = pd.DataFrame(columns=['AC', 'DEF', 'GH', 'B', 'I'])
 
-window_size = 10
+# window_size = 10
 
 def allocate_portfolio(asset_prices, asset_price_predictions_1, \
                        asset_price_predictions_2,\
@@ -227,7 +227,7 @@ def allocate_portfolio(asset_prices, asset_price_predictions_1, \
                         c_weight[4]])
 
     ## RPA
-    weight_rpa = np.multiply(weight_2, (weight_2 @ covariance_matrix)) / np.sqrt(weight_2 @ black_litterman_cov_matrix @ weight_2.T)
+    weight_rpa = np.multiply(weight_2, (weight_2 @ covariance_matrix)) / np.sqrt(np.abs(weight_2 @ black_litterman_cov_matrix @ weight_2.T))
     weight_rpa = np.array(weight_rpa)
 
     ## RSI
