@@ -193,7 +193,7 @@ class Case2ExampleBot(UTCBot):
         ax2.plot(self.calls100)
         ax3.plot(self.puts100)
         ax4.plot(self.pnls)
-        plt.savefig('price_path_test_6.png')
+        plt.savefig('price_path_test_7.png')
 
 
     async def handle_exchange_update(self, update: pb.FeedMessage):
@@ -234,7 +234,7 @@ class Case2ExampleBot(UTCBot):
                 self.C100_price = (
                     float(book2.bids[0].px) + float(book2.asks[0].px)
                 ) / 2
-                # print (self.C100_price)
+                print (f"100C Price: {self.C100_price}")
             
             
             # print(self.positions)

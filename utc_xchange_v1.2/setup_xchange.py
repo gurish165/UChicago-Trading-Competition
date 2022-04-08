@@ -72,6 +72,7 @@ class XChangeEnvBuilder(venv.EnvBuilder):
                 "pandas",  # Greek
                 "scipy",
                 "pyyaml",  # Only necessary for casewriters, but conditional compilation is hard
+                "py_vollib"
             ]
         )
 

@@ -138,6 +138,15 @@ class Case2ExampleBot(UTCBot):
                         theo  # How should this price be chosen?
                     )
                 )
+                requests.append(
+                    self.place_order(
+                        asset_name,
+                        pb.OrderSpecType.LIMIT,
+                        pb.OrderSpecSide.ASK,
+                        1,  # How should this quantity be chosen?
+                        theo # How should this price be chosen?
+                    )
+                )
                 if strike == 100:
                     self.calls100.append(theo*100)
         for strike in option_strikes:
@@ -150,6 +159,15 @@ class Case2ExampleBot(UTCBot):
                         asset_name,
                         pb.OrderSpecType.LIMIT,
                         pb.OrderSpecSide.BID,
+                        1,  # How should this quantity be chosen?
+                        theo # How should this price be chosen?
+                    )
+                )
+                requests.append(
+                    self.place_order(
+                        asset_name,
+                        pb.OrderSpecType.LIMIT,
+                        pb.OrderSpecSide.ASK,
                         1,  # How should this quantity be chosen?
                         theo # How should this price be chosen?
                     )
