@@ -8,7 +8,7 @@ import proto.utc_bot as pb
 import betterproto
 import numpy as np
 import asyncio
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 option_strikes = [90, 95, 100, 105, 110]
@@ -48,6 +48,7 @@ class Case2ExampleBot(UTCBot):
         self.puts100 = []
         self.calls100 = []
         self.vols = []
+        self.C100_price = 0
         self.greek_limits = {
             
         }
@@ -64,7 +65,8 @@ class Case2ExampleBot(UTCBot):
             return 0.2
         else:
             stdev = np.std(self.price_path[-100:])
-            volatility = 0.9* np.log(stdev/2.5 + 0.375) + 0.9
+            # volatility = 0.9* np.log(stdev/2.5 + 0.375) + 0.9
+            volatility = (stdev+0.1)**(1/3)-0.5
             return volatility
     
 
@@ -101,32 +103,32 @@ class Case2ExampleBot(UTCBot):
         time_to_expiry = dte / 252
         theo = self.compute_options_price('p', self.underlying_price, 100, time_to_expiry, self.compute_vol_estimate())
         
-        if(len(self.price_path) == 200):
-            for i in range(20):
-                label = f"covid_{i}"
-                requests.append(
-                    self.modify_order(
-                        label,
-                        "UC100P",
-                        pb.OrderSpecType.LIMIT,
-                        pb.OrderSpecSide.BID,
-                        1,
-                        theo,
-                    )
-                )
-        if(theo*100 > 900):
-            for i in range(20):
-                label = f"covid_{i}"
-                requests.append(
-                    self.modify_order(
-                        label,
-                        "UC100P",
-                        pb.OrderSpecType.LIMIT,
-                        pb.OrderSpecSide.ASK,
-                        1,
-                        theo,
-                    )
-                )
+        # if(len(self.price_path) == 200):
+        #     for i in range(20):
+        #         label = f"covid_{i}"
+        #         requests.append(
+        #             self.modify_order(
+        #                 label,
+        #                 "UC100P",
+        #                 pb.OrderSpecType.LIMIT,
+        #                 pb.OrderSpecSide.BID,
+        #                 1,
+        #                 theo,
+        #             )
+        #         )
+        # if(theo*100 > 900):
+        #     for i in range(20):
+        #         label = f"covid_{i}"
+        #         requests.append(
+        #             self.modify_order(
+        #                 label,
+        #                 "UC100P",
+        #                 pb.OrderSpecType.LIMIT,
+        #                 pb.OrderSpecSide.ASK,
+        #                 1,
+        #                 theo,
+        #             )
+        #         )
         return requests
 
     async def update_options_quotes(self):
@@ -147,7 +149,18 @@ class Case2ExampleBot(UTCBot):
         # print(f"DTE: {dte}")
         print(f"Vol: {vol}")
 
-        requests = self.add_trades()        
+        requests = self.add_trades()
+        if len(self.price_path) == 1:
+            requests.append(
+                self.modify_order(
+                    "only_order",
+                    "UC100C",
+                    pb.OrderSpecType.LIMIT,
+                    pb.OrderSpecSide.BID,
+                    1,
+                    self.compute_options_price('p', self.underlying_price, 100, time_to_expiry, self.compute_vol_estimate())
+                )
+            ) 
         
         for strike in option_strikes:
             for flag in ["C"]: # removed "P"
@@ -180,7 +193,7 @@ class Case2ExampleBot(UTCBot):
         ax2.plot(self.calls100)
         ax3.plot(self.puts100)
         ax4.plot(self.pnls)
-        plt.savefig('price_path_test4.png')
+        plt.savefig('price_path_test_6.png')
 
 
     async def handle_exchange_update(self, update: pb.FeedMessage):
@@ -189,6 +202,7 @@ class Case2ExampleBot(UTCBot):
         if kind == "pnl_msg":
             # When you hear from the exchange about your PnL, print it out
             print("My PnL:", update.pnl_msg.m2m_pnl)
+            print(f"Positions: {self.positions}")
             index = self.time_tick
             self.pnls[index] = float(update.pnl_msg.m2m_pnl)
             for _ in range(3):
@@ -209,12 +223,18 @@ class Case2ExampleBot(UTCBot):
             # When we receive a snapshot of what's going on in the market, update our information
             # about the underlying price.
             book = update.market_snapshot_msg.books["UC"]
+            book2 = update.market_snapshot_msg.books["UC100C"]
 
             # Compute the mid price of the market and store it
             if(len(book.bids) > 0):
                 self.underlying_price = (
                     float(book.bids[0].px) + float(book.asks[0].px)
                 ) / 2
+            if(len(book2.bids) > 0):
+                self.C100_price = (
+                    float(book2.bids[0].px) + float(book2.asks[0].px)
+                ) / 2
+                # print (self.C100_price)
             
             
             # print(self.positions)
@@ -235,7 +255,7 @@ class Case2ExampleBot(UTCBot):
                 await self.update_options_quotes()
             # print("Underlying ", self.underlying_price)
             if (self.current_day == 4.995):
-                # self.market_closed()
+                self.market_closed()
                 pass
 
 
