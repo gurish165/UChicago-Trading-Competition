@@ -1,0 +1,371 @@
+syntax = "proto3";
+package utc_bot;
+
+// Represents the credentials of the competitor
+message Credentials {
+  // The username of the competitor
+  string username = 1;
+
+  // The password of the competitor
+  string password = 2;
+}
+
+// Represents a request to register a new competitor
+message RegisterRequest {
+  // The credentials of the competitor register (struct containing user and pw)
+  Credentials creds = 1;
+}
+
+// Represents a response to a request to register a competitor
+message RegisterResponse {
+  // Whether the request to register a competitor was successful (false if an
+  // error occurred and the competitor was not registered)
+  bool ok = 1;
+
+  // A message detailing why a failure occurred, if it did
+  string message = 2;
+}
+
+// Request to await for trading to start
+message AwaitTradingStartRequest {
+  // the credentials of the competitor waiting for the case to start
+  Credentials creds = 1;
+}
+
+// Response to request to await trading start
+message AwaitTradingStartResponse {
+  // Whether the round has actually started (false if a timeout or internal
+  // error occurred)
+  bool started = 1;
+
+  // A message conveying the failure to await if it occurred
+  string message = 2;
+}
+
+// A request to begin streaming of exchange updates
+message StreamMessagesRequest {
+  // The credentials of the already registered competitor who wishes to stream
+  // updates
+  Credentials creds = 1;
+}
+
+// Response sent when a request to place an order has failed. If this message is
+// received, then the request corresponding to the provided order IDs could not
+// be completed
+message RequestFailedMessage {
+  // Types of order requests (PLACE = 0, MODIFY = 1, CANCEL = 2)
+  enum Type {
+    PLACE = 0;
+    MODIFY = 1;
+    CANCEL = 2;
+  }
+
+  // The type of the failed order that was sent (PLACE = 0, MODIFY = 1, CANCEL =
+  // 2)
+  Type type = 1;
+
+  // The ID of the order that was not successfully placed (or used to replace an
+  // old order), if any
+  string place_order_id = 2;
+
+  // The ID of the order that was not successfully cancelled (or replaced), if
+  // any
+  string cancel_order_id = 3;
+
+  // The message associated with the failed request
+  string message = 4;
+
+  // Asset code that the request was sent for
+  string asset = 5;
+
+  // Timestamp that the failure was noted
+  string timestamp = 6;
+}
+
+// An update containing PnL information for the competitor
+message PnLMessage {
+  // The PnL of the competitor
+  string realized_pnl = 1;
+
+  // Mark to Market PnL
+  string m2m_pnl = 2;
+
+  // The timestamp when this update was created
+  string timestamp = 3;
+}
+
+// A message containing info about a recent trade that occurred
+message TradeMessage {
+  // The asset that the trade occurred in
+  string asset = 1;
+
+  // The price that the trade occurred at
+  string price = 2;
+
+  // The quantity of the trade
+  int32 qty = 3;
+
+  // The timestamp at which this trade occurred
+  string timestamp = 7;
+}
+
+// An update containing info about a recent order fill that occurred
+message FillMessage {
+  enum Side {
+    BUY = 0;
+    SELL = 1;
+  }
+
+  // The ID of the order that was filled
+  string order_id = 1;
+
+  // The asset that was filled
+  string asset = 2;
+
+  // The side that the competitor was on.
+  //  If order_side == BUY, then this fill resulted in you buying the asset
+  //  If order_side == SELL, then this fill resulted in you selling the asset
+  Side order_side = 3;
+
+  // The price level that was filled at
+  string price = 4;
+
+  // The quantity that was filled
+  int32 filled_qty = 5;
+
+  // The remaining quantity in the order
+  int32 remaining_qty = 6;
+
+  // The timestamp at which the fill was processed
+  string timestamp = 7;
+}
+
+// Update containing information on books for every asset
+message MarketSnapshotMessage {
+  // Information for individual asset within whole book update
+  message Book {
+    message PriceLevel {
+      string px = 1;
+      int32 qty = 2;
+    }
+
+    // The asset associated with the book
+    string asset = 1;
+
+    // The bid price levels
+    repeated PriceLevel bids = 2;
+
+    // The ask price levels containing qty and px
+    repeated PriceLevel asks = 3;
+  }
+
+  // map from asset code to book update for that code
+  map<string, Book> books = 1;
+
+  // The time at which the market info was found
+  string timestamp = 2;
+}
+
+// A misc. event sent through the update stream
+message GenericMessage {
+  enum Type {
+    // Just an arbitrary message
+    MESSAGE = 0;
+
+    // Occurs when an unpredictable internal error has happened
+    INTERNAL_ERROR = 1;
+
+    // Occurs when the competitor is deactivated for some reason
+    COMPETITOR_DEACTIVATED = 2;
+
+    // Occurs when this event channel has been replaced by a newer one
+    CHANNEL_REPLACED = 3;
+
+    // Occurs when the round has ended
+    ROUND_ENDED = 4;
+
+    // Occurs when a risk limit is broken, and a consequence has been applied
+    RISK_LIMIT_BROKEN = 5;
+  }
+
+  // The type of exchange event that was sent through the feed
+  Type event_type = 1;
+
+  // The message text associated with that event
+  string message = 2;
+}
+
+// Response containing status of order request
+message LiquidationMessage {
+  // The message associated with the liquidation
+  string message = 1;
+
+  // The order ID associated with the market order (so they can match fill to
+  // risk violation)
+  string order_id = 2;
+
+  // Asset code of order
+  string asset = 3;
+
+  // Timestamp that market order was *initiated*
+  string timestamp = 4;
+}
+
+message OrderCancelledMessage {
+  // The order ID associated with the market order (so they can match fill to
+  // risk violation)
+  string order_id = 1;
+
+  // The Asset code that the order was cancelled for
+  string asset = 2;
+
+  // Whether the cancellation was intentional (i.e. the result of a cancellation
+  // request by the user) or unintentional (e.g. due to a competitor going over
+  // their risk limits)
+  bool intentional = 3;
+
+  // If not intentional, a message detailing why the cancellation took effect
+  string message = 4;
+
+  // Timestamp that market order was *initiated*
+  string timestamp = 5;
+}
+
+// An update from the exchange
+message FeedMessage {
+  oneof msg {
+    RequestFailedMessage request_failed_msg = 1;
+    PnLMessage pnl_msg = 2;
+    TradeMessage trade_msg = 3;
+    FillMessage fill_msg = 4;
+    MarketSnapshotMessage market_snapshot_msg = 5;
+    LiquidationMessage liquidation_msg = 6;
+    GenericMessage generic_msg = 7;
+    OrderCancelledMessage order_cancelled_msg = 8;
+  }
+}
+
+// An order, as sent from the client to the server when placing or modifying and
+// existing order
+message OrderSpec {
+  // Types of orders
+  enum Type {
+    MARKET = 0;
+    LIMIT = 1;
+    IOC = 2;
+  }
+
+  // Sides of orders
+  enum Side {
+    BID = 0;
+    ASK = 1;
+  }
+
+  // The code of the asset to be traded
+  string asset = 1;
+
+  // Whether the order is a market order or a limit order
+  Type type = 2;
+
+  // Whether the order is a bid or an offer
+  Side side = 3;
+
+  // Quantity of the order
+  int32 quantity = 4;
+
+  // The price at which the order is set (only relevant for limit orders)
+  string price = 5;
+}
+
+// A request to place an order
+message PlaceOrderRequest {
+  // The credentials of the relevant competitor
+  Credentials creds = 1;
+
+  // The order to place
+  OrderSpec order = 2;
+}
+
+// A response to a request to place an order
+message PlaceOrderResponse {
+  // Whether the request was successful (if false, the request failed and no
+  // order was placed)
+  bool ok = 1;
+
+  // the ID of the order that was created
+  string order_id = 2;
+
+  // Message about why the request to place an order may have failed
+  string message = 3;
+}
+
+// A request to modify an order
+message ModifyOrderRequest {
+  // The credentials of the relevant competitor
+  Credentials creds = 1;
+
+  // The id of the order to replace
+  string order_id = 2;
+
+  // The order to replace the old one with
+  OrderSpec new_order = 3;
+}
+
+// A response to a ModifyOrderRequest
+message ModifyOrderResponse {
+
+  // Whether the request was successful (if false, the request failed and no
+  // order was removed or placed)
+  bool ok = 1;
+
+  // the ID of the order that was created
+  string order_id = 2;
+
+  // Message about why the request to place an order may have failed
+  string message = 3;
+}
+
+// A request to cancel an order
+message CancelOrderRequest {
+  // The credentials of the relevant competitor
+  Credentials creds = 1;
+
+  // The id of the order to cancel
+  string order_id = 2;
+}
+
+// A response to a CancelOrderRequest
+message CancelOrderResponse {
+  // Whether the request was successful (if false, the request failed and no
+  // order was cancelled)
+  bool ok = 1;
+
+  // The message associated with the attempt to cancel an order
+  string message = 2;
+}
+
+// The gRPC Service
+service ExchangeService {
+
+  // Register a bot
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // Request a stream of exchange updates, specifying what kinds of updates to
+  // include
+  //  N.B. only one of these streams may be open at a time, and they may only be
+  //  opened for a competitor who has registered
+  rpc StreamMessages(StreamMessagesRequest) returns (stream FeedMessage);
+
+  // Wait for trading to start
+  rpc AwaitTradingStart(AwaitTradingStartRequest)
+      returns (AwaitTradingStartResponse);
+
+  // Place an order
+  rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse);
+
+  // Modify an order
+  rpc ModifyOrder(ModifyOrderRequest) returns (ModifyOrderResponse);
+
+  // Cancel an order
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse);
+}

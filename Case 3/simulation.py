@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import allocate
+import alloc
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -14,8 +14,10 @@ daily_returns= []
 daily_returns_by_stock = []
 weights_history = []
 
+srs = []
+
 for i in range(len(price_data_df)):
-    if i> allocate.window_size:
+    if i> alloc.window_size:
         weights_history.append(weight)
         prev_row = np.array(price_data_df.iloc[i-1].tolist()[1:], dtype='float')
         current_row = np.array(price_data_df.iloc[i].tolist()[1:], dtype='float')
@@ -29,7 +31,7 @@ for i in range(len(price_data_df)):
     analyst1_row = analyst_1_prediction_df.iloc[i].values.tolist()[1:]
     analyst2_row = analyst_2_prediction_df.iloc[i].values.tolist()[1:]
     analyst3_row = analyst_3_prediction_df.iloc[i].values.tolist()[1:]
-    weight = allocate.allocate_portfolio(price_row, analyst1_row, analyst2_row, analyst3_row)
+    weight = alloc.allocate_portfolio(price_row, analyst1_row, analyst2_row, analyst3_row)
 
 daily_returns_by_stock = np.array(daily_returns_by_stock, dtype='float')
 weights_history = np.array(weights_history, dtype='float')
@@ -38,8 +40,9 @@ np.savetxt("weights_history.csv", weights_history, delimiter=",")
 
 # SHARPE RATIO
 daily_returns = np.array(daily_returns, dtype='float')
-print(daily_returns)
+print("DAILY RETURNS :", daily_returns)
+print("NAN VALUES:", np.count_nonzero(np.isnan(daily_returns)))
 print("Mean :",np.mean(daily_returns))
 print("Std :", np.std(daily_returns))
 sharpe_ratio = np.mean(daily_returns) / np.std(daily_returns)
-print(f"SHARPE RATIO: {sharpe_ratio}")
+print(f"SHARPE RATIO FINAL: {sharpe_ratio}")

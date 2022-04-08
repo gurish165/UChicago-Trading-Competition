@@ -1,3 +1,6 @@
+'''
+test for case 2
+'''
 from py_vollib import black_scholes as bs
 from py_vollib import black as blk
 import numpy as np
