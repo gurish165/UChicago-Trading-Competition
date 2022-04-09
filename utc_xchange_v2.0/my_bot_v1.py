@@ -3,12 +3,13 @@
 from dataclasses import astuple
 from datetime import datetime
 from utc_bot import UTCBot, start_bot
+from py_vollib import black_scholes as bs
 from black_scholes_volatility import black_scholes as my_bs
 import proto.utc_bot as pb
 import betterproto
 import numpy as np
 import asyncio
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 option_strikes = [90, 95, 100, 105, 110]
@@ -42,16 +43,13 @@ class Case2ExampleBot(UTCBot):
 
         # Stores the current value of the underlying asset
         self.underlying_price = 100
-        self.time_tick = 0
-        self.pnls = [0.0] * 1000
+        self.account_balance = 0
         self.price_path = []
         self.puts100 = []
         self.calls100 = []
         self.vols = []
-        self.greek_limits = {
-            
-        }
-
+        self.bid_orderID = "a"
+        self.ask_orderID = "a"
 
     def compute_vol_estimate(self) -> float:
         """
@@ -59,13 +57,29 @@ class Case2ExampleBot(UTCBot):
         an example bot, we just use a placeholder value here. We recommend that you look into
         different ways of finding what the true volatility of the underlying is.
         """
-
+        # if(self.price_path[-1] < 99.5):
+        #     print("-----------------------------------------------")
+        # stdev = np.std(self.price_path[-100:])
+        # print (f"STDEV SHIFT: {stdev}")
+        # scaling_shifted = np.log(stdev/2.5 + 0.375) + 1
+        # print (f"SCALE SHIFT: {scaling_shifted}")
+        # stdev = np.std(self.price_path)
+        # print (f"STDEVNORMAL: {stdev}")
+        
         if(len(self.price_path) <= 20):
             return 0.2
         else:
+            # close_prices = self.price_path[-10:]
+            # shifted = np.roll(close_prices, 1)
+            # shifted[0] = 1
+            # # print(close_prices)
+            # # print(shifted)
+            # divided = close_prices/shifted
+            # # print(divided)
+            # log_returns = np.log(divided[1:])
+            # volatility = log_returns.std()*252**0.5
             stdev = np.std(self.price_path[-100:])
-            # volatility = 0.9* np.log(stdev/2.5 + 0.375) + 0.9
-            volatility = (stdev+0.1)**(1/3)-0.5
+            volatility = 0.9* np.log(stdev/2.5 + 0.375) + 0.9
             return volatility
     
 
@@ -88,21 +102,12 @@ class Case2ExampleBot(UTCBot):
         """
         per_share_val = 0
         if(flag == 'C' or flag == 'c'):
-            per_share_val = my_bs('c', underlying_px, strike_px, time_to_expiry, 0.00, volatility)
+            per_share_val = bs.black_scholes('c', underlying_px, strike_px, time_to_expiry, 0.00, volatility)
         elif(flag == 'P' or flag == 'p'):
-            per_share_val = my_bs('p', underlying_px, strike_px, time_to_expiry, 0.00, volatility)
+            per_share_val = bs.black_scholes('p', underlying_px, strike_px, time_to_expiry, 0.00, volatility)
         if (per_share_val < 0.1):
             per_share_val = 0.1
         return np.round(per_share_val, 1)
-
-    def add_trades(self):
-        requests = []
-        day = np.floor(self.current_day)
-        dte = 26-day
-        time_to_expiry = dte / 252
-        theo = self.compute_options_price('p', self.underlying_price, 100, time_to_expiry, self.compute_vol_estimate())
-        
-        return requests
 
     async def update_options_quotes(self):
         """
@@ -123,30 +128,21 @@ class Case2ExampleBot(UTCBot):
         print(f"Vol: {vol}")
 
         requests = []
+        requests.append(
+            self.modify_order(
+                self.bid_orderID,
+                "UC",
+                pb.OrderSpecType.MARKET,
+                pb.OrderSpecSide.BID,
+                1
+            )
+        )
         
         for strike in option_strikes:
             for flag in ["C"]: # removed "P"
                 asset_name = f"UC{strike}{flag}"
                 theo = self.compute_options_price(flag, self.underlying_price, strike, time_to_expiry, vol)
                 print(f"{asset_name}: {theo} per share")
-                requests.append(
-                    self.place_order(
-                        asset_name,
-                        pb.OrderSpecType.LIMIT,
-                        pb.OrderSpecSide.BID,
-                        1,  # How should this quantity be chosen?
-                        theo-0.1  # How should this price be chosen?
-                    )
-                )
-                requests.append(
-                    self.place_order(
-                        asset_name,
-                        pb.OrderSpecType.LIMIT,
-                        pb.OrderSpecSide.ASK,
-                        1,  # How should this quantity be chosen?
-                        theo-0.1 # How should this price be chosen?
-                    )
-                )
                 if strike == 100:
                     self.calls100.append(theo*100)
         for strike in option_strikes:
@@ -154,24 +150,6 @@ class Case2ExampleBot(UTCBot):
                 asset_name = f"UC{strike}{flag}"
                 theo = self.compute_options_price(flag, self.underlying_price, strike, time_to_expiry, vol)
                 print(f"{asset_name}: {theo} per share")
-                requests.append(
-                    self.place_order(
-                        asset_name,
-                        pb.OrderSpecType.LIMIT,
-                        pb.OrderSpecSide.BID,
-                        1,  # How should this quantity be chosen?
-                        theo-0.1 # How should this price be chosen?
-                    )
-                )
-                requests.append(
-                    self.place_order(
-                        asset_name,
-                        pb.OrderSpecType.LIMIT,
-                        pb.OrderSpecSide.ASK,
-                        1,  # How should this quantity be chosen?
-                        theo-0.1 # How should this price be chosen?
-                    )
-                )
                 if strike == 100:
                     self.puts100.append(theo*100)
 
@@ -190,9 +168,12 @@ class Case2ExampleBot(UTCBot):
         ax1.plot(y)
         ax2.plot(self.calls100)
         ax3.plot(self.puts100)
-        ax4.plot(self.pnls)
-        plt.savefig('price_path_test_6.png')
+        ax4.plot(self.vols)
+        plt.savefig('price_path_test3.png')
 
+    def update_account_balance(self):
+        value = 0
+        self.account_val.append(value)
 
     async def handle_exchange_update(self, update: pb.FeedMessage):
         kind, _ = betterproto.which_one_of(update, "msg")
@@ -200,13 +181,7 @@ class Case2ExampleBot(UTCBot):
         if kind == "pnl_msg":
             # When you hear from the exchange about your PnL, print it out
             print("My PnL:", update.pnl_msg.m2m_pnl)
-            print(f"Positions: {self.positions}")
-            index = self.time_tick
-            self.pnls[index] = float(update.pnl_msg.m2m_pnl)
-            for _ in range(3):
-                if index != 999:
-                    index += 1
-                    self.pnls[index] = float(update.pnl_msg.m2m_pnl)
+            
 
         elif kind == "fill_msg":
             # When you hear about a fill you had, update your positions
@@ -227,6 +202,8 @@ class Case2ExampleBot(UTCBot):
                 self.underlying_price = (
                     float(book.bids[0].px) + float(book.asks[0].px)
                 ) / 2
+            
+            
             # print(self.positions)
 
         elif (
@@ -237,7 +214,6 @@ class Case2ExampleBot(UTCBot):
             # the start of the case) 
             # print(f"Positions: {self.positions}")
             self.current_day = float(update.generic_msg.message)
-            self.time_tick += 1
             self.price_path.append(self.underlying_price)
             print(f"Day: {self.current_day}")
             print(f"New Price: {self.underlying_price}")
@@ -245,7 +221,7 @@ class Case2ExampleBot(UTCBot):
                 await self.update_options_quotes()
             # print("Underlying ", self.underlying_price)
             if (self.current_day == 4.995):
-                # self.market_closed()
+                self.market_closed()
                 pass
 
 

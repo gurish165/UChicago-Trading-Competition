@@ -8,13 +8,13 @@ import proto.utc_bot as pb
 import betterproto
 import numpy as np
 import asyncio
-# import matplotlib.pyplot as plt
-
+import matplotlib.pyplot as plt
+from greeks import delta, gamma, theta, vega
 
 option_strikes = [90, 95, 100, 105, 110]
 
 
-class Case2ExampleBot(UTCBot):
+class Case2(UTCBot):
     """
     An example bot for Case 2 of the 2021 UChicago Trading Competition. We recommend that you start
     by reading through this bot and understanding how it works. Then, make a copy of this file and
@@ -48,9 +48,21 @@ class Case2ExampleBot(UTCBot):
         self.puts100 = []
         self.calls100 = []
         self.vols = []
+        self.C100_price = 0
         self.greek_limits = {
-            
+            "delta": 2000,
+            "gamma": 5000,
+            "theta": 50000,
+            "vega": 1000000
         }
+        self.my_greek_limits = {
+            "delta": 0,
+            "gamma": 0,
+            "theta": 0,
+            "vega": 0
+        }
+        self.books={}
+        self.safe_buy = 0
 
 
     def compute_vol_estimate(self) -> float:
@@ -68,6 +80,39 @@ class Case2ExampleBot(UTCBot):
             volatility = (stdev+0.1)**(1/3)-0.5
             return volatility
     
+    def under_greek_threshold(self, strike, flag, underlying_price, time_to_expiry, vol):
+        cur_delta = self.my_greek_limits["delta"]
+        if cur_delta + delta(underlying_price, strike, vol, time_to_expiry, 0.00, flag) > 2000:
+            print(f"Breaking Delta: {cur_delta + delta(underlying_price, strike, vol, time_to_expiry, 0.00, flag)} > 2000")
+            return False
+        cur_gamma = self.my_greek_limits["gamma"]
+        if cur_gamma + gamma(underlying_price, strike, vol, time_to_expiry, 0.00, flag) > 5000:
+            print(f"Breaking Gamma: {cur_gamma + gamma(underlying_price, strike, vol, time_to_expiry, 0.00, flag)}")
+            return False
+        cur_theta = self.my_greek_limits["theta"]
+        if cur_theta + theta(S = underlying_price, K = strike, sigma = vol, t = time_to_expiry, r = 0.00, flag = flag) > 50000:
+            print(f"Breaking Theta: {cur_theta + theta(underlying_price, strike, vol, time_to_expiry, 0.00, flag)}")
+            return False
+        cur_vega = self.my_greek_limits["vega"]
+        if cur_vega + vega(underlying_price, strike, vol, time_to_expiry, 0.00, flag) > 1000000:
+            print(f"Breaking Vega: {cur_vega + vega(underlying_price, strike, vol, time_to_expiry, 0.00, flag)}")
+            return False
+        # nothing failed so the order will be placed
+        return True
+
+    def update_greek_limits(self):
+        # add to our greek limits
+        vol = self.compute_vol_estimate()
+        day = np.floor(self.current_day)
+        dte = 26-day
+        time_to_expiry = dte / 252
+        for strike in option_strikes:
+            for flag in ["c", "p"]:
+                count = self.positions[f"UC{strike}{flag.upper()}"]
+                self.greek_limits["delta"] = delta(self.underlying_price, strike, vol, time_to_expiry, 0.00, flag)*count
+                self.greek_limits["gamma"] = gamma(self.underlying_price, strike, vol, time_to_expiry, 0.00, flag)*count
+                self.greek_limits["theta"] = theta(self.underlying_price, strike, vol, time_to_expiry, 0.00, flag)*count
+                self.greek_limits["vega"] = vega(self.underlying_price, strike, vol, time_to_expiry, 0.00, flag)*count
 
     def compute_options_price(
         self,
@@ -95,14 +140,39 @@ class Case2ExampleBot(UTCBot):
             per_share_val = 0.1
         return np.round(per_share_val, 1)
 
-    def add_trades(self):
-        requests = []
-        day = np.floor(self.current_day)
-        dte = 26-day
-        time_to_expiry = dte / 252
-        theo = self.compute_options_price('p', self.underlying_price, 100, time_to_expiry, self.compute_vol_estimate())
-        
-        return requests
+    def add_trades(self, vol):
+        if(self.safe_buy % 5 == 0):
+            requests = []
+            day = np.floor(self.current_day)
+            dte = 26-day
+            time_to_expiry = dte / 252
+            proposed_prices= {}
+            for strike in option_strikes:
+                for flag in ["C", "P"]:
+                    proposed_prices[f"UC{strike}{flag}"] = self.compute_options_price(flag, self.underlying_price, strike, time_to_expiry, vol)
+            for strike in option_strikes:
+                for flag in ["C", "P"]:
+                    asset = f'UC{strike}{flag}'
+                    print(f"Gonna try to buy {asset}")
+                    if(asset in self.books):
+                        book = self.books[asset]
+                        for ask in book.asks:
+                            print(f"Ask: {ask} Proposing: {proposed_prices[asset]}")
+                            if float(ask.px) < proposed_prices[asset]:
+                                if self.under_greek_threshold(strike, flag.lower(), self.underlying_price, time_to_expiry, vol):
+                                    print(f"Appending: {asset} at {proposed_prices[asset] * 1.5}")
+                                    requests.append(
+                                        self.place_order(
+                                        asset,
+                                        pb.OrderSpecType.LIMIT,
+                                        pb.OrderSpecSide.BID,
+                                        1,  # How should this quantity be chosen?
+                                        ask.px # How should this price be chosen?
+                                        )   
+                                    )
+            return requests
+        self.safe_buy += 1
+        return []
 
     async def update_options_quotes(self):
         """
@@ -114,68 +184,12 @@ class Case2ExampleBot(UTCBot):
         """
         
         # What should this value actually be?
-        day = np.floor(self.current_day)
-        dte = 26-day
-        time_to_expiry = dte / 252
         vol = self.compute_vol_estimate()
         self.vols.append(vol)
         # print(f"DTE: {dte}")
         print(f"Vol: {vol}")
 
-        requests = []
-        
-        for strike in option_strikes:
-            for flag in ["C"]: # removed "P"
-                asset_name = f"UC{strike}{flag}"
-                theo = self.compute_options_price(flag, self.underlying_price, strike, time_to_expiry, vol)
-                print(f"{asset_name}: {theo} per share")
-                requests.append(
-                    self.place_order(
-                        asset_name,
-                        pb.OrderSpecType.LIMIT,
-                        pb.OrderSpecSide.BID,
-                        1,  # How should this quantity be chosen?
-                        theo-0.1  # How should this price be chosen?
-                    )
-                )
-                requests.append(
-                    self.place_order(
-                        asset_name,
-                        pb.OrderSpecType.LIMIT,
-                        pb.OrderSpecSide.ASK,
-                        1,  # How should this quantity be chosen?
-                        theo-0.1 # How should this price be chosen?
-                    )
-                )
-                if strike == 100:
-                    self.calls100.append(theo*100)
-        for strike in option_strikes:
-            for flag in ["P"]: # removed "P"
-                asset_name = f"UC{strike}{flag}"
-                theo = self.compute_options_price(flag, self.underlying_price, strike, time_to_expiry, vol)
-                print(f"{asset_name}: {theo} per share")
-                requests.append(
-                    self.place_order(
-                        asset_name,
-                        pb.OrderSpecType.LIMIT,
-                        pb.OrderSpecSide.BID,
-                        1,  # How should this quantity be chosen?
-                        theo-0.1 # How should this price be chosen?
-                    )
-                )
-                requests.append(
-                    self.place_order(
-                        asset_name,
-                        pb.OrderSpecType.LIMIT,
-                        pb.OrderSpecSide.ASK,
-                        1,  # How should this quantity be chosen?
-                        theo-0.1 # How should this price be chosen?
-                    )
-                )
-                if strike == 100:
-                    self.puts100.append(theo*100)
-
-
+        requests = self.add_trades(vol)
         # optimization trick -- use asyncio.gather to send a group of requests at the same time
         # instead of sending them one-by-one
         responses = await asyncio.gather(*requests)
@@ -191,7 +205,7 @@ class Case2ExampleBot(UTCBot):
         ax2.plot(self.calls100)
         ax3.plot(self.puts100)
         ax4.plot(self.pnls)
-        plt.savefig('price_path_test_6.png')
+        plt.savefig('price_path_test_9.png')
 
 
     async def handle_exchange_update(self, update: pb.FeedMessage):
@@ -220,13 +234,25 @@ class Case2ExampleBot(UTCBot):
         elif kind == "market_snapshot_msg":
             # When we receive a snapshot of what's going on in the market, update our information
             # about the underlying price.
+            self.books["UC"] = update.market_snapshot_msg.books["UC"]
+            self.books["UC90C"] = update.market_snapshot_msg.books["UC90C"]
+            self.books["UC95C"] = update.market_snapshot_msg.books["UC95C"]
+            self.books["UC100C"] = update.market_snapshot_msg.books["UC100C"]
+            self.books["UC105C"] = update.market_snapshot_msg.books["UC105C"]
+            self.books["UC110C"] = update.market_snapshot_msg.books["UC110C"]
+            self.books["UC90P"] = update.market_snapshot_msg.books["UC90P"]
+            self.books["UC95P"] = update.market_snapshot_msg.books["UC95P"]
+            self.books["UC100P"] = update.market_snapshot_msg.books["UC100P"]
+            self.books["UC105P"] = update.market_snapshot_msg.books["UC105P"]
+            self.books["UC110P"] = update.market_snapshot_msg.books["UC110P"]
             book = update.market_snapshot_msg.books["UC"]
 
             # Compute the mid price of the market and store it
             if(len(book.bids) > 0):
                 self.underlying_price = (
                     float(book.bids[0].px) + float(book.asks[0].px)
-                ) / 2
+                ) / 2           
+            self.update_greek_limits()
             # print(self.positions)
 
         elif (
@@ -245,9 +271,9 @@ class Case2ExampleBot(UTCBot):
                 await self.update_options_quotes()
             # print("Underlying ", self.underlying_price)
             if (self.current_day == 4.995):
-                # self.market_closed()
+                self.market_closed()
                 pass
 
 
 if __name__ == "__main__":
-    start_bot(Case2ExampleBot)
+    start_bot(Case2)
