@@ -135,7 +135,7 @@ class Case2(UTCBot):
         for strike in option_strikes:
             for flag in ["C", "P"]:
                 asset = f"UC{strike}{flag}"
-                if asset in self.books and len(self.books[asset].asks) > 0 and (len(self.price_path) > 50 or len(self.price_path) < 20):
+                if asset in self.books and len(self.books[asset].asks) > 0 and (len(self.price_path) > 50):
                     # print("making")
                     penny_in_ask = float(self.books[asset].asks[0].px) - 0.1
                     penny_in_bid = float(self.books[asset].bids[0].px) + 0.1
@@ -168,7 +168,7 @@ class Case2(UTCBot):
                                     asset,
                                     pb.OrderSpecType.LIMIT,
                                     pb.OrderSpecSide.ASK,
-                                    5,
+                                    3,
                                     penny_in_ask
                                 )
                             )
