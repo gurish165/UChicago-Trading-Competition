@@ -19,3 +19,6 @@ def vega(S, K, sigma, t, r, flag):
 
 if __name__ == '__main__':
     print(delta(flag ='c', K = 49, S = 50, t = 0.3846, r = 0.05, sigma = 0.2))
+    print(gamma(flag ='c', K = 49, S = 50, t = 0.3846, r = 0.05, sigma = 0.2))
+    print(theta(flag ='c', K = 49, S = 50, t = 0.3846, r = 0.05, sigma = 0.2))
+    print(vega(flag ='c', K = 49, S = 50, t = 0.3846, r = 0.05, sigma = 0.2))
