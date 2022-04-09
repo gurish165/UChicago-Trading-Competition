@@ -170,38 +170,126 @@ class Case2(UTCBot):
         return np.round(per_share_val, 1)
 
     def add_trades(self, vol):
-        if(self.safe_buy % 5 == 0):
-            requests = []
-            day = np.floor(self.current_day)
-            dte = 26-day
-            time_to_expiry = dte / 252
-            proposed_prices= {}
-            for strike in option_strikes:
-                for flag in ["C", "P"]:
-                    proposed_prices[f"UC{strike}{flag}"] = self.compute_options_price(flag, self.underlying_price, strike, time_to_expiry, vol)
-            for strike in option_strikes:
-                for flag in ["C", "P"]:
-                    asset = f'UC{strike}{flag}'
-                    print(f"Gonna try to buy {asset}")
-                    if(asset in self.books):
-                        book = self.books[asset]
-                        for ask in book.asks:
-                            print(f"Ask: {ask} Proposing: {proposed_prices[asset]}")
-                            if float(ask.px)*1.05 < proposed_prices[asset]:
-                                if self.under_greek_threshold(strike, flag.lower(), self.underlying_price, time_to_expiry, vol):
-                                    print(f"Appending: {asset} at {proposed_prices[asset]}")
-                                    requests.append(
-                                        self.place_order(
-                                        asset,
-                                        pb.OrderSpecType.LIMIT,
-                                        pb.OrderSpecSide.BID,
-                                        self.max_contracts_left,  # How should this quantity be chosen?
-                                        float(ask.px) # How should this price be chosen?
-                                        )   
-                                    )
-            return requests
-        self.safe_buy += 1
-        return []
+        requests = []
+        count = 0
+        # if "UC" in self.books:
+        #     requests.append(
+        #             self.modify_order(
+        #                 "UCSELL",
+        #                 "UC",
+        #                 pb.OrderSpecType.LIMIT,
+        #                 pb.OrderSpecSide.ASK,
+        #                 10000,
+        #                 round(float(self.books["UC"].asks[0].px), 2) - 0.01
+        #             )
+        #         )
+        #     requests.append(
+        #         self.modify_order(
+        #             "UCBUY",
+        #             "UC",
+        #             pb.OrderSpecType.LIMIT,
+        #             pb.OrderSpecSide.BID,
+        #             10000,
+        #             round(float(self.books["UC"].bids[0].px), 2) + 0.01
+        #         )
+        #     )
+        for strike in option_strikes:
+            for flag in ["C", "P"]:
+                asset = f"UC{strike}{flag}"
+                if asset in self.books:
+                    # print("making")
+                    penny_in_ask = float(self.books[asset].asks[0].px) - 0.1
+                    penny_in_bid = float(self.books[asset].bids[0].px) + 0.1
+                    if (penny_in_ask - penny_in_bid > 0.1): # as long as we didn't cross
+                        requests.append(
+                            self.modify_order(
+                                f"{asset}",
+                                asset,
+                                pb.OrderSpecType.LIMIT,
+                                pb.OrderSpecSide.ASK,
+                                6 + min(9,max((self.positions[asset] // 5), 0)),
+                                penny_in_ask
+                            )
+                        )
+                        requests.append(
+                            self.modify_order(
+                                f"{asset}",
+                                asset,
+                                pb.OrderSpecType.LIMIT,
+                                pb.OrderSpecSide.BID,
+                                6,
+                                penny_in_bid
+                            )
+                        )
+                        ladder1_ask = float(self.books[asset].asks[0].px) + 0.5
+                        ladder1_bid = float(self.books[asset].bids[0].px) - 0.5
+                        requests.append(
+                            self.modify_order(
+                                f"{asset}_l1",
+                                asset,
+                                pb.OrderSpecType.LIMIT,
+                                pb.OrderSpecSide.ASK,
+                                6 + min(9, max((self.positions[asset] // 5), 0)),
+                                ladder1_ask
+                            )
+                        )
+                        requests.append(
+                            self.modify_order(
+                                f"{asset}_l1",
+                                asset,
+                                pb.OrderSpecType.LIMIT,
+                                pb.OrderSpecSide.BID,
+                                6,
+                                ladder1_bid
+                            )
+                        )
+                        count += 1
+                        ladder2_ask = float(self.books[asset].asks[0].px) + 1
+                        ladder2_bid = float(self.books[asset].bids[0].px) - 1
+                        requests.append(
+                            self.modify_order(
+                                f"{asset}_l2",
+                                asset,
+                                pb.OrderSpecType.LIMIT,
+                                pb.OrderSpecSide.ASK,
+                                6 + min(9, max((self.positions[asset] // 5), 0)),
+                                ladder2_ask
+                            )
+                        )
+                        requests.append(
+                            self.modify_order(
+                                f"{asset}_l2",
+                                asset,
+                                pb.OrderSpecType.LIMIT,
+                                pb.OrderSpecSide.BID,
+                                6,
+                                ladder2_bid
+                            )
+                        )
+                        ladder3_ask = float(self.books[asset].asks[0].px) + 1.5
+                        ladder3_bid = float(self.books[asset].bids[0].px) - 1.5
+                        requests.append(
+                            self.modify_order(
+                                f"{asset}_l3",
+                                asset,
+                                pb.OrderSpecType.LIMIT,
+                                pb.OrderSpecSide.ASK,
+                                3 + min(9, max((self.positions[asset] // 5), 0)),
+                                ladder3_ask
+                            )
+                        )
+                        requests.append(
+                            self.modify_order(
+                                f"{asset}_l3",
+                                asset,
+                                pb.OrderSpecType.LIMIT,
+                                pb.OrderSpecSide.BID,
+                                3,
+                                ladder3_bid
+                            )
+                        )
+            
+        return requests
 
     async def update_options_quotes(self):
         """
@@ -243,16 +331,16 @@ class Case2(UTCBot):
         for resp in responses:
             assert resp.ok
 
-    def market_closed(self):
-        # graph price path
-        # plt.rcParams["figure.autolayout"] = True
-        fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, sharex = True)
-        y = self.price_path
-        ax1.plot(y)
-        ax2.plot(self.calls100)
-        ax3.plot(self.puts100)
-        ax4.plot(self.pnls)
-        plt.savefig('price_path_test_9.png')
+    # def market_closed(self):
+    #     # graph price path
+    #     # plt.rcParams["figure.autolayout"] = True
+    #     fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, sharex = True)
+    #     y = self.price_path
+    #     ax1.plot(y)
+    #     ax2.plot(self.calls100)
+    #     ax3.plot(self.puts100)
+    #     ax4.plot(self.pnls)
+    #     plt.savefig('price_path_test_9.png')
 
 
     async def handle_exchange_update(self, update: pb.FeedMessage):
@@ -262,12 +350,12 @@ class Case2(UTCBot):
             # When you hear from the exchange about your PnL, print it out
             print("My PnL:", update.pnl_msg.m2m_pnl)
             print(f"Positions: {self.positions}")
-            index = self.time_tick
-            self.pnls[index] = float(update.pnl_msg.m2m_pnl)
-            for _ in range(3):
-                if index != 999:
-                    index += 1
-                    self.pnls[index] = float(update.pnl_msg.m2m_pnl)
+            # index = self.time_tick
+            # self.pnls[index] = float(update.pnl_msg.m2m_pnl)
+            # for _ in range(3):
+            #     if index != 999:
+            #         index += 1
+            #         self.pnls[index] = float(update.pnl_msg.m2m_pnl)
 
         elif kind == "fill_msg":
             # When you hear about a fill you had, update your positions
@@ -299,7 +387,9 @@ class Case2(UTCBot):
                 self.underlying_price = (
                     float(book.bids[0].px) + float(book.asks[0].px)
                 ) / 2           
-            self.update_greek_limits()
+            if (self.current_day != 4.995):
+                await self.update_options_quotes()
+            # self.update_greek_limits()
             # print(self.positions)
 
         elif (
@@ -314,11 +404,10 @@ class Case2(UTCBot):
             self.price_path.append(self.underlying_price)
             print(f"Day: {self.current_day}")
             print(f"New Price: {self.underlying_price}")
-            if (self.current_day != 4.995):
-                await self.update_options_quotes()
+            
             # print("Underlying ", self.underlying_price)
             if (self.current_day == 4.995):
-                self.market_closed()
+                # self.market_closed()
                 pass
 
 
