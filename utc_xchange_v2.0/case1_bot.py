@@ -21,20 +21,15 @@ current issues: unfilled orders are not keeping track exactly of real orders
 - main issue when change the price of the order, we are not updating that price in the OpenOrders
 rather we are creating a new openOrder with a different price but the same id
 Solution instead of
+
 '''
 
-from collections import defaultdict
-from gettext import find
-
-from numpy import double
 from utc_bot import UTCBot, start_bot
 import proto.utc_bot as pb
 import betterproto
 
 import asyncio
 import params
-
-from dataclasses import dataclass
 
 class OpenOrders:
     def __init__(self, contract):
@@ -49,6 +44,8 @@ class OpenOrders:
     # adjusting the quantity based on the id - remove order from OpenOrders if quantity is now 0.
     def adjust_qty(self, id, adj):
         self.id_to_qty[id] += adj
+
+        # deleting order
         if self.id_to_qty[id] == 0:
             self.num_open_orders -= 1
             price = self.id_to_price[id]
@@ -58,10 +55,11 @@ class OpenOrders:
                 del self.price_to_id[price]
                 del self.id_to_qty[id]
             except Exception as e:
-                print("Error deleting filled order: ",e)
+                print("Error (0) deleting filled order: ",e)
 
 
     # adding the order to the price_to_id dict if we don't already have any id in this price
+    # NOT USED
     def add_order(self, price, id, qty):
         if not price in self.price_to_id:
             self.price_to_id[price] = id
@@ -85,7 +83,7 @@ class OpenOrders:
                 try:
                     del self.price_to_id[self.id_to_price[old_id]]
                 except Exception as e:
-                    print("Error deleting filled order: ",e)
+                    print("Error (1) deleting filled order: ",e)
 
                 # add new price to id
                 self.price_to_id[price] = old_id
@@ -98,14 +96,15 @@ class OpenOrders:
                 self.id_to_qty[new_id] = qty
                 self.num_open_orders += 1
             else:
+                # old order still exists so delete and then update with new values
 
                 # delete old price, id, and qty
                 try:
-                    del self.price_to_id[self.id_to_price[old_id]]
+                    del self.price_to_id[self.id_to_price[old_id]] # error is no price in price_to_id for old price
                     del self.id_to_price[old_id]
                     del self.id_to_qty[old_id]
                 except Exception as e:
-                    print("Error deleting filled order: ",e)
+                    print("Error (2) deleting filled order: ",e)
 
                 # add new price to new id
                 self.price_to_id[price] = new_id
@@ -122,13 +121,14 @@ class OpenOrders:
         return self.price_to_id[price]
 
 CONTRACTS = ["LBSJ","LBSM", "LBSQ", "LBSV", "LBSZ"]
-ORDER_SIZE = 50
 
-ORDER_L1 = 25
-ORDER_L2 = 10
-ORDER_L3 = 5
+ORDER_SIZE = 65 # 50
 
-L1_SPREAD = 0.20
+ORDER_L1 = 15 # 25
+ORDER_L2 = 10 # 10
+ORDER_L3 = 5 # 5
+
+L1_SPREAD = 0.02
 L2_SPREAD = L1_SPREAD*2
 L3_SPREAD = L1_SPREAD*3
 L4_SPREAD = L1_SPREAD*4
@@ -215,7 +215,6 @@ class Case1Bot(UTCBot):
 
             self.fairs[month] = fair if fair > 0 else params.START_FAIR
 
-
     async def update_quotes(self):
         '''
         This function updates the quotes at each time step. In this sample implementation we
@@ -238,7 +237,7 @@ class Case1Bot(UTCBot):
                     penny_ask_price = params.START_ASK
                     penny_bid_price = params.START_BID
 
-                if ( penny_bid_price - penny_ask_price ) <= 0 :
+                if ( penny_ask_price - penny_bid_price ) > 0 :
 
                     old_bid_id = self.order_ids[contract+' bid']
                     old_ask_id = self.order_ids[contract+' ask']
@@ -426,7 +425,7 @@ class Case1Bot(UTCBot):
                     self.order_book[contract]['Best Ask']['Quantity'] = best_ask.qty
 
             # TODO debug purposes
-            params.book_prices(book,update)
+            #params.book_prices(book,update)
 
         elif kind == "fill_msg":
             # When you hear about a fill you had, update your positions
