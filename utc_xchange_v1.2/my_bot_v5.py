@@ -135,7 +135,7 @@ class Case2(UTCBot):
         for strike in option_strikes:
             for flag in ["C", "P"]:
                 asset = f"UC{strike}{flag}"
-                if asset in self.books and len(self.books[asset].asks) > 0:
+                if asset in self.books and len(self.books[asset].asks) > 0 and (len(self.price_path) > 40):
                     # print("making")
                     penny_in_ask = float(self.books[asset].asks[0].px) - 0.1
                     penny_in_bid = float(self.books[asset].bids[0].px) + 0.1
@@ -146,7 +146,7 @@ class Case2(UTCBot):
                                 asset,
                                 pb.OrderSpecType.LIMIT,
                                 pb.OrderSpecSide.ASK,
-                                10,
+                                15,
                                 penny_in_ask
                             )
                         )
@@ -157,10 +157,15 @@ class Case2(UTCBot):
                                 asset,
                                 pb.OrderSpecType.LIMIT,
                                 pb.OrderSpecSide.BID,
-                                10,
+                                15,
                                 penny_in_bid
                             )
                         )
+                        clearing_quant = 0
+                        if(len(self.price_path) > 400):
+                            clearing_quant = 6
+                        else:
+                            clearing_quant = 3
                         for num in range(self.positions[asset] // 15):
                             requests.append(
                                 self.modify_order(
@@ -168,10 +173,12 @@ class Case2(UTCBot):
                                     asset,
                                     pb.OrderSpecType.LIMIT,
                                     pb.OrderSpecSide.ASK,
-                                    3,
+                                    clearing_quant,
                                     penny_in_ask
                                 )
                             )
+                        
+                        
                         
                         ladder1_ask = float(self.books[asset].asks[0].px) + 0.5
                         ladder1_bid = float(self.books[asset].bids[0].px) - 0.5
@@ -181,7 +188,7 @@ class Case2(UTCBot):
                                 asset,
                                 pb.OrderSpecType.LIMIT,
                                 pb.OrderSpecSide.ASK,
-                                8,
+                                10,
                                 ladder1_ask
                             )
                         )
@@ -191,7 +198,7 @@ class Case2(UTCBot):
                                 asset,
                                 pb.OrderSpecType.LIMIT,
                                 pb.OrderSpecSide.BID,
-                                6,
+                                8,
                                 ladder1_bid
                             )
                         )
@@ -204,7 +211,7 @@ class Case2(UTCBot):
                                 asset,
                                 pb.OrderSpecType.LIMIT,
                                 pb.OrderSpecSide.ASK,
-                                6,
+                                8,
                                 ladder2_ask
                             )
                         )
@@ -214,7 +221,7 @@ class Case2(UTCBot):
                                 asset,
                                 pb.OrderSpecType.LIMIT,
                                 pb.OrderSpecSide.BID,
-                                4,
+                                6,
                                 ladder2_bid
                             )
                         )
@@ -226,7 +233,7 @@ class Case2(UTCBot):
                                 asset,
                                 pb.OrderSpecType.LIMIT,
                                 pb.OrderSpecSide.ASK,
-                                4,
+                                6,
                                 ladder3_ask
                             )
                         )
@@ -236,7 +243,7 @@ class Case2(UTCBot):
                                 asset,
                                 pb.OrderSpecType.LIMIT,
                                 pb.OrderSpecSide.BID,
-                                3,
+                                4,
                                 ladder3_bid
                             )
                         )
@@ -248,7 +255,7 @@ class Case2(UTCBot):
                                 asset,
                                 pb.OrderSpecType.LIMIT,
                                 pb.OrderSpecSide.ASK,
-                                3,
+                                4,
                                 ladder4_ask
                             )
                         )
@@ -258,8 +265,30 @@ class Case2(UTCBot):
                                 asset,
                                 pb.OrderSpecType.LIMIT,
                                 pb.OrderSpecSide.BID,
-                                2,
+                                3,
                                 ladder4_bid
+                            )
+                        )
+                        ladder5_ask = float(self.books[asset].asks[0].px) + 3.5
+                        ladder5_bid = float(self.books[asset].bids[0].px) - 3.5
+                        requests.append(
+                            self.modify_order(
+                                f"{asset}_l5",
+                                asset,
+                                pb.OrderSpecType.LIMIT,
+                                pb.OrderSpecSide.ASK,
+                                2,
+                                ladder5_ask
+                            )
+                        )
+                        requests.append(
+                            self.modify_order(
+                                f"{asset}_l5",
+                                asset,
+                                pb.OrderSpecType.LIMIT,
+                                pb.OrderSpecSide.BID,
+                                1,
+                                ladder5_bid
                             )
                         )
             
