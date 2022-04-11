@@ -1,4 +1,6 @@
 # UTC 2022
+The write up is currently underway but feel free to take a look around.
+
 
 # About the Team
 
