@@ -1,5 +1,5 @@
 # UTC 2022
-The write up is currently underway but feel free to take a look around.
+The write up is currently underway but feel free to take a look around and give a star to come back to the project!
 
 
 # About the Team
