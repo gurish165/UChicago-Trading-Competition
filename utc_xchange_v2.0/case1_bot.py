@@ -455,7 +455,8 @@ class Case1Bot(UTCBot):
                 #print("SOLD: ",fill_msg.asset,"\t",fill_msg.price,"\t", fill_msg.filled_qty,"\t", fill_msg.remaining_qty)
 
 
-            print("pos:", self.pos)
+            # UNCOMMENT FOR DEBUGGING
+            #print("pos:", self.pos)
 
 
         elif kind == "generic_msg":
@@ -465,7 +466,7 @@ class Case1Bot(UTCBot):
                 self.rain.append(pred)
 
                 # TODO debug purposes
-                print("rain:",self.rain)
+                #print("rain:",self.rain)
 
             # Prints the Risk Limit message
             except ValueError:

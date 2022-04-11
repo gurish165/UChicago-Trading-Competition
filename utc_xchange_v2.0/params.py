@@ -3,7 +3,7 @@ import proto.utc_bot as pb
 
 # starting fair spot price
 # enter each round!
-START_BID = 550
+START_BID = 700
 START_ASK = 100
 
 # NOT USED

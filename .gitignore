@@ -78,4 +78,8 @@ xchange-win.exe
 
 # case 1 model files
 models/
+*.log
+benchmark.md
 
+# credentials
+private_login.md
