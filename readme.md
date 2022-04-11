@@ -1,7 +1,14 @@
 # UTC 2022
 
-## About the competition
-TODO
+# About the Team
+
+The University Of Michigan Team: <br>
+Gurish Sharma<br>
+Suchir Gupta<br>
+Jaewoo Kim<br>
+John Trager<br>
+## About the Competition
+https://tradingcompetition.uchicago.edu/
 
 The competition had 3 separate cases focused on market making, trading options, and portfolio management and required participants to write trading algorithms for each case.
 
@@ -15,10 +22,10 @@ For our market making strategy we focused on the strategies outline in 'TODO''s 
 
 
 ### Case 2
-
+(in progress)
 
 ### Case 3
-
+(in progress)
 
 ## Results + Debrief
 Our team ended 3rd for case1 of market making, roughly 4th for case 2, and around 7th for the third case. In the end we won 2nd overall.
