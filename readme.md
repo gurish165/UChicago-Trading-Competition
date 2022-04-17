@@ -45,3 +45,6 @@ Case2:
 Case3:
 - maybe used RL or some form of machine learning as Blacklitterman worked but not super well or used a more aggressive pairs trading
 
+## Fintech / Trading Industry Takeaways
+- Many trading firms have added crypto trading desks within the past year
+    - ctc mentioned trading with offshore accounts (as in the US it is not legal yet)
