@@ -55,3 +55,7 @@ Case3:
 - Many trading firms have added crypto trading desks within the past year
     - ctc mentioned trading with offshore accounts (as in the US it is not legal yet)
 - Getting a quant/SWE interview is just a matter of networking, having a strong resume (job, experince, projects, competitions etc)
+
+
+## Running the Code
+(in progress)
