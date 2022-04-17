@@ -2,7 +2,7 @@
 The write up is currently underway but feel free to take a look around and give a star to come back to the project!
 
 
-# About the Team
+## About the Team
 
 The University Of Michigan Team: <br>
 Gurish Sharma<br>
@@ -13,6 +13,10 @@ John Trager<br>
 https://tradingcompetition.uchicago.edu/
 
 The competition had 3 separate cases focused on market making, trading options, and portfolio management and required participants to write trading algorithms for each case.
+
+I've put together a slide deck to explain the competition and our stategies (click the image below to see the pdf):
+
+[![presentaion](https://github.com/John-Trager/UChicago-Trading-Competition/blob/22458399692469a59804d697b61ec320cdc121fa/media/utc22.jpeg)](https://github.com/John-Trager/UChicago-Trading-Competition/blob/22458399692469a59804d697b61ec320cdc121fa/media/utc22.pdf)
 
 ## Case strategy breakdown
 TODO: (write about what our process, what we tried and failed, and what our end product was and outcome + debrief/what we learned)
@@ -50,3 +54,4 @@ Case3:
 ## Fintech / Trading Industry Takeaways
 - Many trading firms have added crypto trading desks within the past year
     - ctc mentioned trading with offshore accounts (as in the US it is not legal yet)
+- Getting a quant/SWE interview is just a matter of networking, having a strong resume (job, experince, projects, competitions etc)
