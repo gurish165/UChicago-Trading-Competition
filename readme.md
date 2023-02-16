@@ -28,6 +28,9 @@ The winning team implemented the same strategy as us, but their orders were able
 ### Case 2: Options Trading (4th Place**)
 ** We scored 1st every round and had the most PnL in this case but we did not clear our positions. The judges brought us down a few rankings for this *subjective* reason.
 
+![UMich Case 2 Round 1 PnL](https://github.com/gurish165/UChicago-Trading-Competition/blob/master/UTC_UMich_Case2.jpg?raw=true)
+
+
 ### Case 3: Portfolio Management (7th Place)
 
 
