@@ -26,7 +26,7 @@ We also want to implement "levels" so that if someone places a bid at $10 for an
 The winning team implemented the same strategy as us, but their orders were able to get on the books faster then us. They claimed to be using multi-threading/multi-processing to send more orders to the exchange. In most of these trading competitions (Berkely, Jane Street ETC, MIT, etc) this is not possible because they rate limit your requests to the exchange. Another team that did well used the first 10 seconds of every round to send huge quantities of bogus trades. These are trades that have absurdly wide spreads and quantities. We also should have written a function that clears out our positions at the end of the round. This also would have been useful for Case 2.
 
 ### Case 2: Options Trading (4th Place**)
-** We scored 1st every round and had the most PnL in this case but we did not clear our positions. The judges brought us down a few rankings for this *cough* subjective reason.
+** We scored 1st every round and had the most PnL in this case but we did not clear our positions. The judges brought us down a few rankings for this <sb>subjective</sb> reason.
 
 ### Case 3: Portfolio Management (7th Place)
 
