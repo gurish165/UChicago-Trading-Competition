@@ -1,5 +1,8 @@
 # University of Michigan UChicago Midwest Trading Competition 2022 - 2nd Place Overall
 
+## Code
+I apologize, I have not read through the code in a while and I forgot which code we ran at the competition. Feel free to take a guess which Python file we actually used.
+
 ## About the competition
 
 The competition had 3 separate cases focused on market making, trading options, and portfolio management and required participants to write trading algorithms for each case.
