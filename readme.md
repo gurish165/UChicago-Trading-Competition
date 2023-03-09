@@ -30,15 +30,13 @@ The winning team implemented the same strategy as us, but their orders were able
 
 ![UMich Case 2 Round 1 PnL](https://github.com/gurish165/UChicago-Trading-Competition/blob/master/UTC_UMich_Case2.jpg?raw=true)
 
-
-### Case 3: Portfolio Management (7th Place)
-
-
-
-Case2:
+Case2 TODO:
 - Close out of positions before the end of the round (otherwise when the contracts are cash-settled based on the black-sholes model we could lose a lot of money if we are on the wrong side of the trade - which happened to us taking use from 1st to ~4th), if we had a good theo price then we could use market taking to hedge our profits but with increased volatility
 - A strat we used that worked really well to give us consistent gains (before contracts cash-settle) was to hedge our bets by placing positions on the opposite side of orders if they became too large. So for example if we were holding a long position that was too large (by our predefined risk limit) we would open a short position in the same contract (basically closing our long position). This worked to limit our risk and volatility in our gain during the trading cycle, however we failed to take into account closing all of our positions before our trading period ended (thus leaving use with some losses after cash settlement of our contracts)
 - it's hard to test market making strategies when there is little volume, so in order to test in a comp like setting we need to run with a liquid market (ie many bots trading at the same time)
+
+
+### Case 3: Portfolio Management (7th Place)
 
 Case3:
 - maybe used RL or some form of machine learning as Blacklitterman worked but not super well or used a more aggressive pairs trading
